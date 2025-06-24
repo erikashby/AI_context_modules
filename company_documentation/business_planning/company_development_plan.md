@@ -15,32 +15,35 @@ This plan outlines the strategic phases for developing the AI Context Service fr
 
 ---
 
-## 🧐 Phase 1: Discovery & Validation
-**Goal:** Confirm the market pain and interest exist.
+## 🧠 Phase 1: Concept Definition
+**Goal:** Clarify the core concept and value proposition.
 
 **Key Activities:**
-* Conduct customer interviews to gather qualitative evidence
-* Launch a landing page for user sign-ups
+* Define the problem: What specific AI context challenges does this solve?
+* Identify the target users: Who needs persistent AI context? (developers, power users, enterprises?)
+* Articulate the value proposition: What makes this better than current solutions?
+* Describe the basic concept: How does an AI context service work at a high level?
+* Define success: What would "working well" look like for users?
+* Produce a PRFAQ document that captures the complete concept
+
+---
+
+## 🛠️ Phase 2: Functional Prototype Development
+**Goal:** Build a working prototype that demonstrates the core concept from Phase 1.
+
+**Key Activities:**
+* [TO BE DEFINED AFTER PHASE 1]
+
+---
+
+## 🧐 Phase 3: Discovery & Validation
+**Goal:** Validate market interest using the functional prototype.
+
+**Key Activities:**
+* Conduct customer interviews with live prototype demonstrations
+* Launch a landing page showcasing the working prototype
 * Complete a Lean Canvas or one-page business plan
-
----
-
-## 🧠 Phase 2: Concept & Schema Design
-**Goal:** Define the foundational product architecture.
-
-**Key Activities:**
-* Draft context schema (e.g., JSON models for schedule, preferences)
-* Map user and AI client flows, APIs, and endpoints
-* Prioritize MVP features using techniques like MoSCoW
-
----
-
-## 🛠️ Phase 3: MVP Development
-**Goal:** Deliver a minimal, functional context service prototype.
-
-**Key Activities:**
-* Build an MCP-compatible context server with essential connectors
-* Launch a closed alpha to test functionality and gather feedback
+* Gather concrete feedback on the actual user experience
 
 ---
 

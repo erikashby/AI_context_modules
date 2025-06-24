@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "company_documentation/vision_and_strategy/core_values.md",
+                "file": "company_documentation/business_planning/phase_1_prfaq_document.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "core_values"
+              "title": "phase_1_prfaq_document"
             }
           }
         ]
@@ -170,20 +170,27 @@
   },
   "active": "adbe1c87c5973832",
   "lastOpenFiles": [
+    "company_documentation/business_planning/phase_1_prfaq_creation_prompt.md",
+    "company_documentation/business_planning/phase_1_prfaq_document.md",
+    "company_documentation/business_planning/conaas_core_differentiation.md",
+    "company_documentation/business_planning/phase_1_market_research_report.md",
+    "company_documentation/business_planning/phase_1_deep_research_prompt.md",
+    "company_documentation/business_planning/project_tracking.md",
+    "company_documentation/business_planning/phase_1_approach.md",
+    "company_documentation/business_planning/company_development_plan.md",
+    "ai_instructions/ai_agents/planning_agent_instructions.md",
+    "ai_instructions/general_prompt_library.md",
+    "product_and_engineering_documentation/README.md",
+    "company_documentation/vision_and_strategy/core_values.md",
     "company_documentation/vision_and_strategy/success_metrics_kpis.md",
     "company_documentation/vision_and_strategy/target_market_customers.md",
     "company_documentation/vision_and_strategy/vision_statement.md",
-    "company_documentation/business_planning/company_development_plan.md",
-    "company_documentation/vision_and_strategy/core_values.md",
     "company_documentation/vision_and_strategy/mission_statement.md",
     "company_documentation/vision_and_strategy/vision_documents",
     "README.md",
     "ai_instructions/README.md",
     "company_documentation/README.md",
-    "product_and_engineering_documentation/README.md",
     "ai_instructions/ai_agents/general_agent_instructions.md",
-    "ai_instructions/general_prompt_library.md",
-    "ai_instructions/ai_agents/planning_agent_instructions.md",
     "ai_instructions/General prompt_library.md",
     "source_code/README.md",
     "product_and_engineering_documentation/product_documentation",
