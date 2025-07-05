@@ -35,10 +35,46 @@ This document captures the technical investigation and research needed to valida
 #### Technical Investigation
 
 **1.1 MCP Specification Status**
-- [ ] Current MCP version and stability
-- [ ] Official documentation completeness
-- [ ] Breaking changes in roadmap
-- [ ] Community adoption metrics
+- [x] Current MCP version and stability
+- [x] Official documentation completeness
+- [x] Breaking changes in roadmap
+- [x] Community adoption metrics
+
+**Research Results:**
+
+**Current Version & Stability:**
+- **Latest Version**: 2025-06-18 (current stable release)
+- **Protocol Foundation**: Built on JSON-RPC 2.0 with well-defined client-server architecture
+- **Maturity Level**: Production-ready with major enterprise adoption (Block, Replit, Sourcegraph, Zed)
+- **Version History**: 
+  - 2024-11-05: Initial stable release
+  - 2025-03-26: Major update with OAuth 2.1 and transport improvements
+  - 2025-06-18: Latest with enhanced security and structured tool output
+
+**Breaking Changes & Risk Assessment:**
+- **Recent Breaking Changes** (2025-03-26 to 2025-06-18):
+  - Removed JSON-RPC batching support
+  - Required Resource Indicators (RFC 8707) for clients
+  - Changed lifecycle operations from "SHOULD" to "MUST"
+- **Risk Level**: **Medium** - Protocol is stabilizing but still evolving with breaking changes every 3-6 months
+- **Mitigation**: Plan for regular updates and version compatibility testing
+
+**Official Documentation:**
+- **Quality**: Comprehensive with formal specification at modelcontextprotocol.io
+- **SDKs Available**: Python, TypeScript, C#, Java with official support
+- **Status**: Well-documented with clear implementation guides and examples
+
+**Community Adoption:**
+- **Ecosystem Size**: 5,000+ public MCP servers on GitHub
+- **Download Metrics**: 6.6M+ monthly Python SDK downloads
+- **Enterprise Adoption**: Block, Replit, Sourcegraph, Zed, Codeium integrated
+- **AI Assistant Support**: Claude Desktop (native), OpenAI ChatGPT (March 2025), Google Gemini (confirmed April 2025)
+
+**Technical Architecture:**
+- **Transport**: Streamable HTTP with OAuth 2.1 authorization
+- **Message Format**: JSON-RPC 2.0 with structured tool outputs
+- **Core Primitives**: Resources (context/data), Tools (functions), Prompts (templates)
+- **Security**: OAuth Resource Server classification, end-to-end encryption support
 
 **1.2 Remote MCP Server Capabilities**
 - [ ] Remote server implementation patterns
