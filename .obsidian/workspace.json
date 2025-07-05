@@ -11,10 +11,14 @@
             "id": "19f28d6dbf93602b",
             "type": "leaf",
             "state": {
-              "type": "empty",
-              "state": {},
+              "type": "markdown",
+              "state": {
+                "file": "product_and_engineering_documentation/phase-1-foundation/phase-1-product-and-engineering-plan.md",
+                "mode": "source",
+                "source": false
+              },
               "icon": "lucide-file",
-              "title": "New tab"
+              "title": "phase-1-product-and-engineering-plan"
             }
           }
         ]
