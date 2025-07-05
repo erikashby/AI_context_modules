@@ -35,16 +35,101 @@ This document captures the technical investigation and research needed to valida
 #### Technical Investigation
 
 **1.1 MCP Specification Status**
-- [ ] Current MCP version and stability
-- [ ] Official documentation completeness
-- [ ] Breaking changes in roadmap
-- [ ] Community adoption metrics
+- [x] Current MCP version and stability
+- [x] Official documentation completeness
+- [x] Breaking changes in roadmap
+- [x] Community adoption metrics
+
+**Research Results:**
+
+**Current Version & Stability:**
+- **Latest Version**: 2025-06-18 (current stable release)
+- **Protocol Foundation**: Built on JSON-RPC 2.0 with well-defined client-server architecture
+- **Maturity Level**: Production-ready with major enterprise adoption (Block, Replit, Sourcegraph, Zed)
+- **Version History**: 
+  - 2024-11-05: Initial stable release
+  - 2025-03-26: Major update with OAuth 2.1 and transport improvements
+  - 2025-06-18: Latest with enhanced security and structured tool output
+
+**Breaking Changes & Risk Assessment:**
+- **Recent Breaking Changes** (2025-03-26 to 2025-06-18):
+  - Removed JSON-RPC batching support
+  - Required Resource Indicators (RFC 8707) for clients
+  - Changed lifecycle operations from "SHOULD" to "MUST"
+- **Risk Level**: **Medium** - Protocol is stabilizing but still evolving with breaking changes every 3-6 months
+- **Mitigation**: Plan for regular updates and version compatibility testing
+
+**Official Documentation:**
+- **Quality**: Comprehensive with formal specification at modelcontextprotocol.io
+- **SDKs Available**: Python, TypeScript, C#, Java with official support
+- **Status**: Well-documented with clear implementation guides and examples
+
+**Community Adoption:**
+- **Ecosystem Size**: 5,000+ public MCP servers on GitHub
+- **Download Metrics**: 6.6M+ monthly Python SDK downloads
+- **Enterprise Adoption**: Block, Replit, Sourcegraph, Zed, Codeium integrated
+- **AI Assistant Support**: Claude Desktop (native), OpenAI ChatGPT (March 2025), Google Gemini (confirmed April 2025)
+
+**Technical Architecture:**
+- **Transport**: Streamable HTTP with OAuth 2.1 authorization
+- **Message Format**: JSON-RPC 2.0 with structured tool outputs
+- **Core Primitives**: Resources (context/data), Tools (functions), Prompts (templates)
+- **Security**: OAuth Resource Server classification, end-to-end encryption support
 
 **1.2 Remote MCP Server Capabilities**
-- [ ] Remote server implementation patterns
-- [ ] Authentication and authorization options
-- [ ] Connection persistence and reliability
-- [ ] Error handling and retry mechanisms
+- [x] Remote server implementation patterns
+- [x] Authentication and authorization options
+- [x] Connection persistence and reliability
+- [x] Error handling and retry mechanisms
+
+**Research Results:**
+
+**Implementation Patterns:**
+- **Two Primary Architectures**:
+  - **Embedded Authorization Server**: MCP server acts as Identity Provider
+  - **External Authorization Server**: MCP server delegates OAuth to external provider (recommended)
+- **Framework Options**: Express.js, Cloudflare Workers, Node.js-based implementations
+- **Deployment Platforms**: Google Cloud Run, Vercel, Railway, Cloudflare Workers
+
+**Authentication & Authorization:**
+- **OAuth 2.1 + PKCE**: Required by 2025-06-18 spec
+- **Resource Server Classification**: MCP servers classified as OAuth Resource Servers
+- **Discovery Endpoints**: Must implement `/.well-known/oauth-protected-resource`
+- **Resource Indicators (RFC 8707)**: Required to prevent token misuse
+- **User-Specific Authorization**: Dynamic tool exposure based on user roles/permissions
+- **Google Account Integration**: Product confirmed Google Accounts as auth mechanism
+
+**Connection Persistence & Reliability:**
+- **Transport Evolution**: Transitioning from HTTP+SSE to Streamable HTTP
+  - **HTTP+SSE (Legacy)**: Requires persistent connections, limits serverless scaling
+  - **Streamable HTTP (Current)**: Stateless, better for serverless deployment
+- **Session Management**: 
+  - Unique session IDs per client
+  - Durable Objects for persistent state (Cloudflare)
+  - In-memory session tracking for most use cases
+- **Scalability Limitations**: No built-in load balancing or failover mechanisms
+
+**Error Handling & Retry Mechanisms:**
+- **Client-Side Retry**: Currently depends on MCP client (Claude Desktop, etc.)
+- **Recommended Retry Strategy**:
+  - Max retries: 3
+  - Exponential backoff: 1s, 2s, 4s, 8s...
+  - Transient error detection (network issues, timeouts)
+- **Current Gap**: No standardized retry configuration across clients
+- **Session Cleanup**: Timeout mechanisms needed for abandoned sessions
+
+**Risk Assessment for Remote Service:**
+- **✅ Feasibility**: Confirmed - both Claude and ChatGPT support remote MCP servers
+- **⚠️ Complexity**: OAuth 2.1 implementation adds authentication complexity
+- **⚠️ Reliability**: No built-in failover/load balancing requires custom solutions
+- **⚠️ Transport Transition**: Supporting both HTTP+SSE and Streamable HTTP during transition period
+
+**Recommended Implementation Approach:**
+1. **External OAuth Provider**: Use Auth0, Google, or WorkOS for authentication
+2. **Streamable HTTP Transport**: Focus on new transport for better scalability
+3. **Session State Management**: Implement timeout and cleanup mechanisms
+4. **Custom Retry Logic**: Build retry mechanisms into our server implementation
+5. **Multi-Transport Support**: Support both transports during transition period
 
 **1.3 AI Assistant Integration Status**
 - [ ] Claude MCP integration capabilities and setup process
