@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "product_and_engineering_documentation/phase-1-foundation/phase-1-product-and-engineering-plan.md",
+                "file": "product_and_engineering_documentation/phase-1-foundation/phase-1-tech-investigation.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "phase-1-product-and-engineering-plan"
+              "title": "phase-1-tech-investigation"
             }
           }
         ]
@@ -170,9 +170,10 @@
   },
   "active": "19f28d6dbf93602b",
   "lastOpenFiles": [
+    "ai_instructions/ai_agents/general_agent_instructions.md",
     "product_and_engineering_documentation/phase-1-foundation/phase-1-tech-investigation.md",
-    "ai_instructions/json_prompt_library.md",
     "product_and_engineering_documentation/phase-1-foundation/phase-1-product-and-engineering-plan.md",
+    "ai_instructions/json_prompt_library.md",
     "product_and_engineering_documentation/phase-1-foundation",
     "ai_instructions/general_prompt_library.md",
     "company_documentation/business_planning/phase_1_prfaq_document.md",
@@ -194,7 +195,6 @@
     "README.md",
     "ai_instructions/README.md",
     "company_documentation/README.md",
-    "ai_instructions/ai_agents/general_agent_instructions.md",
     "ai_instructions/General prompt_library.md",
     "source_code/README.md",
     "product_and_engineering_documentation/product_documentation",
