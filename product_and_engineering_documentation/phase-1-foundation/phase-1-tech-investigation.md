@@ -14,20 +14,23 @@ This document captures the technical investigation and research needed to valida
 #### Questions for Product Manager Consultation
 
 **Remote Service Architecture:**
-1. Do Claude and ChatGPT currently support connecting to remote MCP servers, or only local installations?
-2. What authentication mechanisms are supported for remote MCP connections?
-3. Are there any known limitations with remote MCP vs local MCP that affect user experience?
-4. What's the expected latency tolerance for remote MCP calls from AI assistants?
+1. Do Claude and ChatGPT currently support connecting to remote MCP servers, or only local installations?  >> Yes, they do. Please see documentation for remote MCP servers
+2. What authentication mechanisms are supported for remote MCP connections? Google Accounts
+3. Are there any known limitations with remote MCP vs local MCP that affect user experience?  This is unknown,  This is why we are doing this explore.  Plan is to work with enginering to have them built a remote prototype so we can see how this works
+4. What's the expected latency tolerance for remote MCP calls from AI assistants? Less than 5 seconds right now. Howeve rthis is not critical for this investigation
 
 **Market Positioning:**
-5. Should we position as MCP-first (requiring MCP-compatible AI assistants) or build fallback mechanisms for non-MCP clients?
-6. What's the competitive advantage of being MCP-native vs building custom integrations?
-7. How important is it to support both Claude and ChatGPT simultaneously in MVP?
+>> Note Phase-1 foundation is about techinical feasibility but we will answer these questions anyway
+
+5. Should we position as MCP-first (requiring MCP-compatible AI assistants) or build fallback mechanisms for non-MCP clients?  (No, this is an MCP service.  MCP is taking over quickly as the AI world so we are going forward. with this.)
+   
+6. What's the competitive advantage of being MCP-native vs building custom integrations? (We can support multiple AI assisntants not just one)
+7. How important is it to support both Claude and ChatGPT simultaneously in MVP? Very, this is the proof that this model is an open model.
 
 **User Experience:**
-8. How complex can the setup process be for users to connect their AI assistants to our remote service?
-9. Should we provide our own AI assistant interface or rely entirely on users' existing AI tools?
-10. What happens if MCP connection fails - do we need graceful degradation?
+8. How complex can the setup process be for users to connect their AI assistants to our remote service? (This does not matter, right now this is a tech inviestigation to see if it spossoble.)
+9. Should we provide our own AI assistant interface or rely entirely on users' existing AI tools? Existin AI tools.  The whole point is to expose this functionaly as far as possoble.  If we try to build our own AI tools then we end up competing with OpenAI Chat GPT or others.
+10. What happens if MCP connection fails - do we need graceful degradation? Then this business idea is not feasible.  Hence why this is phase 1 tech investigation.
 
 #### Technical Investigation
 
