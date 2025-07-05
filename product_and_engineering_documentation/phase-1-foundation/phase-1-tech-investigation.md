@@ -11,6 +11,50 @@ This document captures the technical investigation and research needed to valida
 - [ ] Integration patterns with major AI assistants
 - [ ] Performance characteristics and limitations
 
+#### Questions for Product Manager Consultation
+
+**Remote Service Architecture:**
+1. Do Claude and ChatGPT currently support connecting to remote MCP servers, or only local installations?
+2. What authentication mechanisms are supported for remote MCP connections?
+3. Are there any known limitations with remote MCP vs local MCP that affect user experience?
+4. What's the expected latency tolerance for remote MCP calls from AI assistants?
+
+**Market Positioning:**
+5. Should we position as MCP-first (requiring MCP-compatible AI assistants) or build fallback mechanisms for non-MCP clients?
+6. What's the competitive advantage of being MCP-native vs building custom integrations?
+7. How important is it to support both Claude and ChatGPT simultaneously in MVP?
+
+**User Experience:**
+8. How complex can the setup process be for users to connect their AI assistants to our remote service?
+9. Should we provide our own AI assistant interface or rely entirely on users' existing AI tools?
+10. What happens if MCP connection fails - do we need graceful degradation?
+
+#### Technical Investigation
+
+**1.1 MCP Specification Status**
+- [ ] Current MCP version and stability
+- [ ] Official documentation completeness
+- [ ] Breaking changes in roadmap
+- [ ] Community adoption metrics
+
+**1.2 Remote MCP Server Capabilities**
+- [ ] Remote server implementation patterns
+- [ ] Authentication and authorization options
+- [ ] Connection persistence and reliability
+- [ ] Error handling and retry mechanisms
+
+**1.3 AI Assistant Integration Status**
+- [ ] Claude MCP integration capabilities and setup process
+- [ ] ChatGPT MCP support (current status and roadmap)
+- [ ] Other major AI assistants with MCP support
+- [ ] Custom integration requirements for non-MCP assistants
+
+**1.4 Performance and Scalability**
+- [ ] Typical MCP call latency requirements
+- [ ] Concurrent connection limits
+- [ ] Bandwidth and payload size constraints
+- [ ] Caching strategies for remote MCP servers
+
 ### 2. Context Storage Architecture
 - [ ] Schema design for structured context data
 - [ ] Database options and trade-offs
