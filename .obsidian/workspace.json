@@ -4,21 +4,17 @@
     "type": "split",
     "children": [
       {
-        "id": "e78cf8ef20009f69",
+        "id": "fe45d11f03b3f90c",
         "type": "tabs",
         "children": [
           {
-            "id": "adbe1c87c5973832",
+            "id": "19f28d6dbf93602b",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "ai_instructions/json_prompt_library.md",
-                "mode": "source",
-                "source": false
-              },
+              "type": "empty",
+              "state": {},
               "icon": "lucide-file",
-              "title": "json_prompt_library"
+              "title": "New tab"
             }
           }
         ]
@@ -168,12 +164,12 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "adbe1c87c5973832",
+  "active": "19f28d6dbf93602b",
   "lastOpenFiles": [
+    "ai_instructions/json_prompt_library.md",
     "product_and_engineering_documentation/phase-1-foundation/phase-1-product-and-engineering-plan.md",
     "product_and_engineering_documentation/phase-1-foundation",
     "ai_instructions/general_prompt_library.md",
-    "ai_instructions/json_prompt_library.md",
     "company_documentation/business_planning/phase_1_prfaq_document.md",
     "company_documentation/business_planning/phase_1_prfaq_creation_prompt.md",
     "company_documentation/business_planning/conaas_core_differentiation.md",
