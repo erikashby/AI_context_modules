@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "product_and_engineering_documentation/phase-1-foundation/phase-1-technical-architecture.md",
+                "file": "product_and_engineering_documentation/phase-1-foundation/development-plan-minimal-prototype.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "phase-1-technical-architecture"
+              "title": "development-plan-minimal-prototype"
             }
           }
         ]
@@ -170,8 +170,9 @@
   },
   "active": "19f28d6dbf93602b",
   "lastOpenFiles": [
-    "product_and_engineering_documentation/phase-1-foundation/minimal-tech-prototype.md",
     "product_and_engineering_documentation/phase-1-foundation/phase-1-technical-architecture.md",
+    "product_and_engineering_documentation/phase-1-foundation/development-plan-minimal-prototype.md",
+    "product_and_engineering_documentation/phase-1-foundation/minimal-tech-prototype.md",
     "product_and_engineering_documentation/phase-1-foundation/phase-1-product-and-engineering-plan.md",
     "product_and_engineering_documentation/phase-1-foundation/phase-1-tech-investigation.md",
     "ai_instructions/ai_agents/general_agent_instructions.md",
@@ -197,7 +198,6 @@
     "README.md",
     "ai_instructions/README.md",
     "company_documentation/README.md",
-    "ai_instructions/General prompt_library.md",
     "product_and_engineering_documentation/product_documentation",
     "source_code",
     "product_and_engineering_documentation/testing_and_qa",
