@@ -29,10 +29,11 @@ module.exports = async (req, res) => {
     if (url === '/' && method === 'GET') {
       return res.json({
         service: 'Hello World MCP Server',
-        version: '1.0.0',
+        version: '1.0.2',
         endpoints: {
           health: '/health',
-          mcp: '/mcp'
+          mcp: '/mcp',
+          sse: '/sse'
         }
       });
     }
