@@ -62,7 +62,7 @@ module.exports = async (req, res) => {
             },
             serverInfo: {
               name: 'Hello World MCP Server',
-              version: '1.0.0'
+              version: '1.0.1'
             }
           };
           break;
