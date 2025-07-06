@@ -1,0 +1,10 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "cd source_code/minimal-mcp-prototype && npm start"
+healthcheckPath = "/health"
+restartPolicyType = "always"
+
+[env]
+NODE_ENV = "production"
