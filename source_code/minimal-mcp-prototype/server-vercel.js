@@ -37,8 +37,8 @@ module.exports = async (req, res) => {
       });
     }
 
-    // MCP JSON-RPC endpoint
-    if (url === '/mcp' && method === 'POST') {
+    // MCP endpoints - both /sse and /mcp should work
+    if ((url === '/sse' || url === '/mcp') && method === 'POST') {
       const { method: rpcMethod, params, id } = req.body;
       console.log(`MCP Request: ${rpcMethod}`, params);
       
