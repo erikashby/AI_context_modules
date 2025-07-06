@@ -1,0 +1,14 @@
+{
+  "name": "AI Context Service Prototype",
+  "version": "1.0.0",
+  "description": "Minimal MCP server for context validation",
+  "capabilities": {
+    "resources": true,
+    "tools": true,
+    "prompts": true
+  },
+  "transport": {
+    "type": "streamable-http",
+    "port": 3000
+  }
+}
