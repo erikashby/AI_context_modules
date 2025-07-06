@@ -1,6 +1,6 @@
 # MCP HTTP Client Bridge for Claude Desktop
 param(
-    [string]$ServerUrl = "https://ai_context_service_private.railway.app/mcp"
+    [string]$ServerUrl = "https://ai_context_service_private.railway.app/api/mcp"
 )
 
 $messageId = 0

@@ -114,7 +114,7 @@ class MCPHttpClient {
 }
 
 // Main execution
-const serverUrl = process.env.MCP_SERVER_URL || 'https://ai_context_service_private.railway.app/mcp';
+const serverUrl = process.env.MCP_SERVER_URL || 'https://ai_context_service_private.railway.app/api/mcp';
 const client = new MCPHttpClient(serverUrl);
 
 // Start processing stdio

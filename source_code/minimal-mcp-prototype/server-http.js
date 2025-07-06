@@ -73,8 +73,8 @@ function searchContext(query) {
   }
 }
 
-// Health check endpoint
-app.get('/health', (req, res) => {
+// Status endpoint (avoid Railway's /health interception)
+app.get('/status', (req, res) => {
   try {
     const healthStatus = {
       status: 'ok',
@@ -84,10 +84,10 @@ app.get('/health', (req, res) => {
       transport: 'HTTP',
       context_loaded: !!contextData
     };
-    console.log('Health check requested:', healthStatus);
+    console.log('Status check requested:', healthStatus);
     res.json(healthStatus);
   } catch (error) {
-    console.error('Health check failed:', error);
+    console.error('Status check failed:', error);
     res.status(500).json({
       status: 'error',
       timestamp: new Date().toISOString(),
@@ -96,8 +96,22 @@ app.get('/health', (req, res) => {
   }
 });
 
-// MCP JSON-RPC endpoint
-app.post('/mcp', async (req, res) => {
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({
+    service: 'AI Context Service MCP Server',
+    version: '1.0.0',
+    transport: 'HTTP',
+    endpoints: {
+      status: '/status',
+      mcp: '/api/mcp'
+    },
+    timestamp: new Date().toISOString()
+  });
+});
+
+// MCP JSON-RPC endpoint (use /api/mcp to avoid conflicts)
+app.post('/api/mcp', async (req, res) => {
   try {
     const { method, params, id } = req.body;
     console.log(`MCP Request: ${method}`, params);
@@ -459,8 +473,9 @@ Please analyze and summarize:
 // Start server
 app.listen(PORT, () => {
   console.log(`HTTP MCP Server running on port ${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/health`);
-  console.log(`MCP endpoint: http://localhost:${PORT}/mcp`);
+  console.log(`Status check: http://localhost:${PORT}/status`);
+  console.log(`Root endpoint: http://localhost:${PORT}/`);
+  console.log(`MCP endpoint: http://localhost:${PORT}/api/mcp`);
   console.log('Server ready for HTTP MCP connections');
 });
 
