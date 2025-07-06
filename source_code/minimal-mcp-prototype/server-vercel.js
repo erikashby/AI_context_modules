@@ -138,9 +138,16 @@ module.exports = async (req, res) => {
           result = {
             protocolVersion: '2024-11-05',
             capabilities: {
-              tools: {},
-              resources: {},
-              prompts: {}
+              tools: {
+                listChanged: true
+              },
+              resources: {
+                subscribe: true,
+                listChanged: true
+              },
+              prompts: {
+                listChanged: true
+              }
             },
             serverInfo: {
               name: 'AI Context Service Prototype',
