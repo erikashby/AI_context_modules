@@ -1,0 +1,23 @@
+{
+  "name": "minimal-mcp-prototype",
+  "version": "1.0.0",
+  "description": "Minimal MCP server for context validation",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server-http.js",
+    "start:stdio": "node server.js",
+    "dev": "node server-http.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["mcp", "context", "ai", "prototype"],
+  "author": "AI Context Service",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "latest",
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  }
+}

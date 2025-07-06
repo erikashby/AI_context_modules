@@ -1,0 +1,12 @@
+{
+  "name": "ai-context-service-railway-deploy",
+  "version": "1.0.0", 
+  "description": "Railway deployment for AI Context Service MCP prototype",
+  "scripts": {
+    "start": "cd source_code/minimal-mcp-prototype && npm install && npm start",
+    "build": "cd source_code/minimal-mcp-prototype && npm install"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

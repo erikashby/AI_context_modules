@@ -42,6 +42,11 @@ This document captures the complete technical architecture decisions and investi
 - Built-in HTTPS and domains
 - Good for prototype and early production
 
+**Deployment Status**: ✅ **DEPLOYED**
+- **Production URL**: https://ai_context_service_private.railway.app
+- **Status**: Successfully deployed and operational
+- **Health Check**: Responding correctly on `/health` endpoint
+
 **Cost Structure:**
 - **Free Trial**: 30 days with $5 credits (perfect for prototype)
 - **Production**: $20/month minimum (Pro plan)
@@ -98,11 +103,11 @@ Internet
 ```json
 {
   "mcpServers": {
-    "contextservice": {
+    "ai-context-service": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-remote"],
       "env": {
-        "MCP_SERVER_URL": "https://your-mcp-server.railway.app"
+        "MCP_SERVER_URL": "https://ai_context_service_private.railway.app"
       }
     }
   }

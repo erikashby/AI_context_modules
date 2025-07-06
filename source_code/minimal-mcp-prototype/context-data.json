@@ -1,0 +1,60 @@
+{
+  "user_profile": {
+    "name": "Test User",
+    "timezone": "America/New_York",
+    "work_schedule": "9am-5pm weekdays",
+    "productivity_peak": "morning"
+  },
+  "current_projects": [
+    {
+      "id": "proj-1",
+      "name": "AI Context Service MVP",
+      "status": "in_progress",
+      "deadline": "2025-08-15",
+      "priority": "high",
+      "description": "Building MCP-based context service",
+      "next_actions": ["Complete prototype validation", "Test with Claude Desktop"]
+    },
+    {
+      "id": "proj-2", 
+      "name": "Market Research Analysis",
+      "status": "completed",
+      "deadline": "2025-07-01",
+      "priority": "medium",
+      "description": "Phase 1 market validation research"
+    }
+  ],
+  "upcoming_meetings": [
+    {
+      "id": "meeting-1",
+      "title": "Product Planning Session",
+      "date": "2025-07-07",
+      "time": "10:00 AM",
+      "duration": "60 minutes",
+      "participants": ["Erik", "Product Team"],
+      "preparation_needed": "Review project status and next quarter priorities"
+    },
+    {
+      "id": "meeting-2",
+      "title": "Technical Architecture Review", 
+      "date": "2025-07-08",
+      "time": "2:00 PM",
+      "duration": "90 minutes",
+      "participants": ["Erik", "Engineering Team"],
+      "preparation_needed": "Prepare MCP prototype demo"
+    }
+  ],
+  "preferences": {
+    "communication_style": "direct",
+    "work_focus": "deep_work_blocks", 
+    "meeting_preference": "morning_blocks",
+    "productivity_patterns": "Most creative before lunch, analytical work afternoons"
+  },
+  "recent_context": [
+    {
+      "date": "2025-07-06",
+      "event": "Started MCP prototype development",
+      "details": "Completed technical architecture and began implementation planning"
+    }
+  ]
+}
