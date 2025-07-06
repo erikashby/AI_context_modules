@@ -236,6 +236,20 @@ module.exports = async (req, res) => {
           }
           break;
           
+        case 'notifications/initialized':
+          // This is a notification, not a request, so no response needed
+          console.log('Client has initialized');
+          return res.json({
+            jsonrpc: '2.0',
+            id: id
+          });
+          
+        case 'ping':
+          result = {
+            acknowledged: true
+          };
+          break;
+          
         default:
           throw new Error(`Unknown method: ${rpcMethod}`);
       }
