@@ -148,7 +148,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-let transport;
+const transports = new Map();
 
 // Health check
 app.get('/health', (req, res) => {
@@ -156,7 +156,8 @@ app.get('/health', (req, res) => {
     status: 'ok',
     service: 'Hello World MCP Server (SDK)',
     version: '1.0.0',
-    transport: 'SSE'
+    transport: 'SSE',
+    activeSessions: transports.size
   });
 });
 
@@ -177,12 +178,28 @@ app.get('/', (req, res) => {
 app.get("/sse", async (req, res) => {
   console.log('SSE connection requested - using official SDK');
   try {
-    transport = new SSEServerTransport("/messages", res);
+    const transport = new SSEServerTransport("/messages", res);
+    const sessionId = `session_${Date.now()}_${Math.random()}`;
+    
+    // Store transport for this session
+    transports.set(sessionId, transport);
+    console.log(`Created transport for session: ${sessionId}`);
+    
+    // Connect server to transport
     await server.connect(transport);
     console.log('SSE transport connected via SDK');
+    
+    // Clean up on disconnect
+    res.on('close', () => {
+      console.log(`Session closed: ${sessionId}`);
+      transports.delete(sessionId);
+    });
+    
   } catch (error) {
     console.error('SDK SSE connection error:', error);
-    res.status(500).json({ error: error.message });
+    if (!res.headersSent) {
+      res.status(500).json({ error: error.message });
+    }
   }
 });
 
@@ -190,6 +207,10 @@ app.get("/sse", async (req, res) => {
 app.post("/messages", async (req, res) => {
   console.log('Message received:', req.body);
   try {
+    // Find the most recent transport (simplified approach)
+    const transportArray = Array.from(transports.values());
+    const transport = transportArray[transportArray.length - 1];
+    
     if (transport) {
       await transport.handlePostMessage(req, res);
     } else {
@@ -197,7 +218,9 @@ app.post("/messages", async (req, res) => {
     }
   } catch (error) {
     console.error('SDK message handling error:', error);
-    res.status(500).json({ error: error.message });
+    if (!res.headersSent) {
+      res.status(500).json({ error: error.message });
+    }
   }
 });
 
