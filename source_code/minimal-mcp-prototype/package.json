@@ -4,7 +4,7 @@
   "description": "Minimal MCP server for context validation",
   "main": "server.js",
   "scripts": {
-    "start": "node server-streamable-http.js",
+    "start": "node server-stateless.js",
     "start:stdio": "node server.js",
     "start:railway": "node server-railway-mcp.js",
     "start:vercel": "node server-vercel.js",
