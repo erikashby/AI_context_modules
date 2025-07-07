@@ -148,8 +148,22 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Store transports for sessions
-const transports = {};
+// Create single transport instance for the server
+let mcpTransport;
+
+async function initializeTransport() {
+  if (!mcpTransport) {
+    mcpTransport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: () => `session_${Date.now()}_${Math.random()}`,
+      enableJsonResponse: false // Use SSE streaming by default
+    });
+    
+    // Connect server to transport once
+    await server.connect(mcpTransport);
+    console.log('MCP Server connected to StreamableHTTP transport');
+  }
+  return mcpTransport;
+}
 
 // Health check
 app.get('/health', (req, res) => {
@@ -157,8 +171,7 @@ app.get('/health', (req, res) => {
     status: 'ok',
     service: 'Hello World MCP Server (Streamable HTTP)',
     version: '1.0.0',
-    transport: 'StreamableHTTP',
-    activeSessions: Object.keys(transports).length
+    transport: 'StreamableHTTP'
   });
 });
 
@@ -181,15 +194,8 @@ app.all('/mcp', async (req, res) => {
   console.log('Request body:', req.body);
   
   try {
-    // Create transport with required options
-    const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: () => `session_${Date.now()}_${Math.random()}`,
-      enableJsonResponse: false // Use SSE streaming by default
-    });
-    
-    // Connect server to transport
-    await server.connect(transport);
-    console.log('Connected to StreamableHTTP transport');
+    // Get the single transport instance
+    const transport = await initializeTransport();
     
     // Handle the request
     await transport.handleRequest(req, res);
