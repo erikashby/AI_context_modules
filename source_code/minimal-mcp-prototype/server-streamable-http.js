@@ -181,8 +181,11 @@ app.all('/mcp', async (req, res) => {
   console.log('Request body:', req.body);
   
   try {
-    // Create transport for this request
-    const transport = new StreamableHTTPServerTransport();
+    // Create transport with required options
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: () => `session_${Date.now()}_${Math.random()}`,
+      enableJsonResponse: false // Use SSE streaming by default
+    });
     
     // Connect server to transport
     await server.connect(transport);
