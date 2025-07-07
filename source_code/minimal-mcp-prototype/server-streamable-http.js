@@ -197,8 +197,12 @@ app.all('/mcp', async (req, res) => {
     // Get the single transport instance
     const transport = await initializeTransport();
     
-    // Handle the request
-    await transport.handleRequest(req, res);
+    // Handle the request with parsed body for POST requests
+    if (req.method === 'POST') {
+      await transport.handleRequest(req, res, req.body);
+    } else {
+      await transport.handleRequest(req, res);
+    }
     console.log('Request handled by StreamableHTTP transport');
     
   } catch (error) {
