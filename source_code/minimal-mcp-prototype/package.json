@@ -4,9 +4,11 @@
   "description": "Minimal MCP server for context validation",
   "main": "server.js",
   "scripts": {
-    "start": "node server-http.js",
+    "start": "node server-railway-mcp.js",
     "start:stdio": "node server.js",
-    "dev": "node server-http.js",
+    "start:railway": "node server-railway-mcp.js",
+    "start:vercel": "node server-vercel.js",
+    "dev": "node server-railway-mcp.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": ["mcp", "context", "ai", "prototype"],
