@@ -23,8 +23,8 @@ const server = new Server(
   }
 );
 
-// Define tools
-server.setRequestHandler('tools/list', async () => {
+// Define tools using correct SDK syntax
+server.setRequestHandler({ method: 'tools/list' }, async () => {
   return {
     tools: [
       {
@@ -53,7 +53,7 @@ server.setRequestHandler('tools/list', async () => {
   };
 });
 
-server.setRequestHandler('tools/call', async (request) => {
+server.setRequestHandler({ method: 'tools/call' }, async (request) => {
   const { name, arguments: args } = request.params;
   
   switch (name) {
@@ -72,8 +72,8 @@ server.setRequestHandler('tools/call', async (request) => {
   }
 });
 
-// Define resources
-server.setRequestHandler('resources/list', async () => {
+// Define resources using correct SDK syntax
+server.setRequestHandler({ method: 'resources/list' }, async () => {
   return {
     resources: [
       {
@@ -86,7 +86,7 @@ server.setRequestHandler('resources/list', async () => {
   };
 });
 
-server.setRequestHandler('resources/read', async (request) => {
+server.setRequestHandler({ method: 'resources/read' }, async (request) => {
   const { uri } = request.params;
   
   if (uri === 'hello://world') {
@@ -102,8 +102,8 @@ server.setRequestHandler('resources/read', async (request) => {
   }
 });
 
-// Define prompts
-server.setRequestHandler('prompts/list', async () => {
+// Define prompts using correct SDK syntax
+server.setRequestHandler({ method: 'prompts/list' }, async () => {
   return {
     prompts: [{
       name: 'hello_prompt',
@@ -117,7 +117,7 @@ server.setRequestHandler('prompts/list', async () => {
   };
 });
 
-server.setRequestHandler('prompts/get', async (request) => {
+server.setRequestHandler({ method: 'prompts/get' }, async (request) => {
   const { name, arguments: promptArgs } = request.params;
   
   if (name === 'hello_prompt') {
