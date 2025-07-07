@@ -2,17 +2,30 @@
 
 ## Remote MCP Server Implementation Insights
 
-**Date**: 2025-07-06  
+**Date**: 2025-07-07 (Updated)  
 **Context**: Building AI Context Service remote MCP server prototype
 
 ### Key Discoveries
 
-#### 1. MCP Protocol Implementation Requirements
+#### 1. MCP Protocol Implementation Requirements (2025 UPDATE)
 
-**Transport Layer Evolution**:
-- **Legacy**: HTTP+SSE (2024-11-05 spec) - persistent connections, limits serverless scaling
-- **Current**: Streamable HTTP (2025-03-26 spec) - stateless, better for cloud deployment
-- **Reality**: Both transports still required for compatibility
+**CRITICAL: Transport Layer Deprecation**:
+- **❌ DEPRECATED**: SSE transport (`SSEServerTransport`) as of 2025
+- **✅ CURRENT**: Streamable HTTP (`StreamableHTTPServerTransport`) - modern standard
+- **⚠️ WARNING**: Do NOT use SSE examples from 2024 - they are obsolete
+
+**Correct 2025 SDK Usage**:
+```javascript
+// ✅ CORRECT (2025)
+const { StreamableHTTPServerTransport } = require('@modelcontextprotocol/sdk/server/streamableHttp.js');
+const transport = new StreamableHTTPServerTransport({
+  sessionIdGenerator: () => `session_${Date.now()}_${Math.random()}`,
+  enableJsonResponse: false
+});
+
+// ❌ WRONG (deprecated)
+const { SSEServerTransport } = require('@modelcontextprotocol/sdk/server/sse.js');
+```
 
 **Critical MCP Methods**:
 - `initialize` - Protocol handshake with capability advertisement
@@ -24,21 +37,24 @@
 - `prompts/list` - Prompt discovery
 - `prompts/get` - Prompt retrieval
 
-#### 2. Remote MCP Server Patterns
+#### 2. Remote MCP Server Patterns (2025 UPDATE)
 
-**Official Server URL Patterns** (from Anthropic documentation):
+**Modern Server URL Patterns**:
+```
+https://server.com/mcp  // Modern StreamableHTTP endpoint
+```
+
+**Legacy Server URL Patterns** (still supported but deprecated):
 ```
 https://mcp.asana.com/sse
 https://mcp.atlassian.com/v1/sse  
 https://mcp.linear.app/sse
-https://mcp.intercom.com/sse
-https://mcp.paypal.com/sse
-https://api.dashboard.plaid.com/mcp/sse
-https://mcp.sentry.dev/sse
-https://mcp.squareup.com/sse
 ```
 
-**Key Pattern**: All production MCP servers use `/sse` endpoints, not `/mcp` or other paths.
+**Key Changes**: 
+- Modern servers use `/mcp` endpoint with StreamableHTTP
+- Legacy `/sse` endpoints are deprecated but may still work
+- Official SDK handles both GET (streaming) and POST (requests) on same endpoint
 
 #### 3. Claude Desktop Integration Requirements
 
@@ -195,12 +211,50 @@ res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 - Claude Desktop for end-user experience
 - Direct HTTP testing for debugging
 
+### Critical Implementation Lessons (2025)
+
+#### 1. **NEVER Create New Transport Per Request**
+❌ **Wrong**:
+```javascript
+app.all('/mcp', async (req, res) => {
+  const transport = new StreamableHTTPServerTransport({...}); // Creates new transport each time!
+  await server.connect(transport);
+});
+```
+
+✅ **Correct**:
+```javascript
+// Create once, reuse for all requests
+let mcpTransport;
+async function initializeTransport() {
+  if (!mcpTransport) {
+    mcpTransport = new StreamableHTTPServerTransport({...});
+    await server.connect(mcpTransport);
+  }
+  return mcpTransport;
+}
+```
+
+#### 2. **Required Constructor Options**
+The `StreamableHTTPServerTransport` constructor requires:
+- `sessionIdGenerator`: Function to generate unique session IDs
+- `enableJsonResponse`: Set to `false` for SSE streaming (recommended)
+
+#### 3. **SDK Schema Usage**
+Use schema objects, not strings:
+```javascript
+// ✅ Correct
+server.setRequestHandler(ListToolsRequestSchema, async () => {...});
+
+// ❌ Wrong  
+server.setRequestHandler('tools/list', async () => {...});
+```
+
 ### Remaining Questions
 
-1. **Response Format Differences**: Why does MCP Inspector work but Claude Desktop doesn't with same server?
-2. **Transport Requirements**: Does Claude Desktop require true SSE streaming vs HTTP POST?
-3. **Authentication**: When is OAuth 2.1 actually required vs "authless" servers?
-4. **Protocol Versions**: Are there Claude Desktop-specific MCP protocol requirements?
+1. **Final Response Handling**: Ensure transport properly sends responses back to clients
+2. **Session Management**: Verify single transport handles multiple concurrent sessions
+3. **Error Handling**: Proper error responses for malformed requests
 
 ### Technical Architecture Validation
 
