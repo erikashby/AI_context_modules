@@ -42,11 +42,11 @@ app.get('/sse', (req, res) => {
     'Access-Control-Allow-Origin': '*'
   });
 
-  // Send initialization message
-  const initMessage = {
+  // Send server capabilities as JSON-RPC response
+  const capabilitiesResponse = {
     jsonrpc: '2.0',
-    method: 'initialized',
-    params: {
+    id: null,
+    result: {
       protocolVersion: '2024-11-05',
       capabilities: {
         tools: { listChanged: true },
@@ -60,43 +60,8 @@ app.get('/sse', (req, res) => {
     }
   };
 
-  res.write(`data: ${JSON.stringify(initMessage)}\n\n`);
-  console.log('Sent initialization message');
-
-  // Send tools list
-  const toolsMessage = {
-    jsonrpc: '2.0',
-    method: 'tools/list',
-    params: {
-      tools: [
-        {
-          name: 'hello',
-          description: 'Say hello to someone',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              name: { type: 'string', description: 'Name to greet' }
-            },
-            required: ['name']
-          }
-        },
-        {
-          name: 'echo',
-          description: 'Echo back a message',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              message: { type: 'string', description: 'Message to echo' }
-            },
-            required: ['message']
-          }
-        }
-      ]
-    }
-  };
-
-  res.write(`data: ${JSON.stringify(toolsMessage)}\n\n`);
-  console.log('Sent tools list');
+  res.write(`data: ${JSON.stringify(capabilitiesResponse)}\n\n`);
+  console.log('Sent server capabilities');
 
   // Keep connection alive
   const heartbeat = setInterval(() => {
