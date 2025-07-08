@@ -20,19 +20,17 @@ function generatePin() {
 
 // Root endpoint - shows available services
 app.get('/', (req, res) => {
-  res.setHeader('Content-Type', 'text/html');
-  res.send(`<!DOCTYPE html>
-<html><head><title>AI Context Service</title></head><body>
-<h1>AI Context Service</h1>
-<p>Hello! I'm an AI-to-AI conversational HTTP service.</p>
-<h2>Available Services</h2>
-<ul>
-<li><a href="/notes?user=erikashby">Personal Notes</a></li>
-<li><a href="/calendar?user=erikashby">Calendar</a></li>
-<li><a href="/tasks?user=erikashby">Tasks</a></li>
-</ul>
-<p>Each service will guide you through authentication and provide contextual data.</p>
-</body></html>`);
+  res.setHeader('Content-Type', 'application/json');
+  res.json({
+    service: "AI Context Service",
+    description: "Dynamic context data service",
+    endpoints: {
+      notes: "/notes?user=erikashby",
+      calendar: "/calendar?user=erikashby", 
+      tasks: "/tasks?user=erikashby"
+    },
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Notes service - multi-step authentication
@@ -53,21 +51,18 @@ Example: /notes?user=erikashby
     const sessionPin = generatePin();
     sessions.set(user, { pin: sessionPin, created: Date.now() });
     
-    res.setHeader('Content-Type', 'text/html');
-    return res.send(`<!DOCTYPE html>
-<html><head><title>Personal Notes Service</title></head><body>
-<h1>Personal Notes Service</h1>
-<p>Hello! I'm responding to a request for ${user}'s personal notes.</p>
-<h2>Authentication Required</h2>
-<p>To access ${user}'s notes, I need you to:</p>
-<ol>
-<li><strong>Ask ${user} for their PIN</strong></li>
-<li><strong>Then fetch this URL</strong>: <code>/notes?user=${user}&pin={PIN}</code></li>
-</ol>
-<p>Replace {PIN} with the actual PIN the user provides.</p>
-<hr>
-<p><em>This is a dynamic AI-to-AI conversation. Authentication required to proceed.</em></p>
-</body></html>`);
+    res.setHeader('Content-Type', 'application/json');
+    return res.json({
+      status: "authentication_required",
+      user: user,
+      message: "PIN required to access notes",
+      next_step: {
+        action: "provide_pin",
+        endpoint: `/notes?user=${user}&pin={PIN}`,
+        method: "GET"
+      },
+      session_created: new Date().toISOString()
+    });
   }
 
   // Step 2: Validate PIN and return notes
@@ -83,38 +78,46 @@ Please ask the user for the correct PIN and try again.
   }
 
   // Success! Return the actual notes
-  res.setHeader('Content-Type', 'text/html');
-  res.send(`<!DOCTYPE html>
-<html><head><title>${user}'s Personal Notes</title></head><body>
-<h1>${user}'s Personal Notes</h1>
-<p>✅ <strong>Authentication successful!</strong></p>
-<h2>Current Notes</h2>
-<h3>Project Ideas</h3>
-<ul>
-<li>Build a conversational HTTP protocol for AI context</li>
-<li>Create a markdown-based command system</li>
-<li>Test AI-to-AI communication patterns</li>
-</ul>
-<h3>Meeting Notes</h3>
-<ul>
-<li><strong>Today</strong>: Discussed MCP protocol alternatives</li>
-<li><strong>Next</strong>: Implement proof of concept for HTTP-markdown protocol</li>
-</ul>
-<h3>Personal Reminders</h3>
-<ul>
-<li>Review render.yaml deployment configuration</li>
-<li>Test the conversational flow with Claude</li>
-<li>Iterate on the protocol design</li>
-</ul>
-<h3>Context Data</h3>
-<ul>
-<li>User timezone: America/New_York</li>
-<li>Preferred communication: Direct and concise</li>
-<li>Current focus: Protocol experimentation</li>
-</ul>
-<hr>
-<p><em>Session authenticated at ${new Date().toISOString()}</em></p>
-</body></html>`);
+  res.setHeader('Content-Type', 'application/json');
+  res.json({
+    status: "success",
+    user: user,
+    authenticated: true,
+    data: {
+      personal_notes: {
+        project_ideas: [
+          "Build a conversational HTTP protocol for AI context",
+          "Create a structured data API for AI assistants",
+          "Test JSON-based dynamic context delivery"
+        ],
+        meeting_notes: [
+          {
+            date: "today",
+            topic: "Discussed MCP protocol alternatives and JSON approaches"
+          },
+          {
+            date: "next",
+            topic: "Implement proof of concept for dynamic JSON context"
+          }
+        ],
+        personal_reminders: [
+          "Review deployment configuration",
+          "Test JSON response with AI assistants", 
+          "Validate dynamic content delivery without prompt injection"
+        ],
+        context_metadata: {
+          user_timezone: "America/New_York",
+          communication_preference: "Direct and concise",
+          current_focus: "JSON protocol experimentation",
+          productivity_peak: "morning"
+        }
+      }
+    },
+    session_info: {
+      authenticated_at: new Date().toISOString(),
+      session_type: "dynamic_context_delivery"
+    }
+  });
 });
 
 // Calendar service - different authentication pattern
@@ -218,39 +221,74 @@ app.get('/tasks', (req, res) => {
   const { user } = req.query;
   
   if (!user) {
-    res.setHeader('Content-Type', 'text/markdown');
-    return res.send(`# Error: Missing User
-
-Please provide a user parameter.
-`);
+    res.setHeader('Content-Type', 'application/json');
+    return res.json({
+      error: "missing_user_parameter",
+      message: "User parameter required"
+    });
   }
 
-  res.setHeader('Content-Type', 'text/markdown');
-  res.send(`# ${user}'s Task List
-
-## High Priority
-- [ ] Complete conversational HTTP protocol proof of concept
-- [ ] Test AI-to-AI markdown communication
-- [ ] Deploy to Render for live testing
-
-## Medium Priority
-- [ ] Document the protocol specification
-- [ ] Create more complex authentication flows
-- [ ] Test with different AI clients
-
-## Low Priority
-- [ ] Add encryption for sensitive data
-- [ ] Implement rate limiting
-- [ ] Create web interface for configuration
-
-## Recently Completed
-- [x] Research MCP protocol alternatives
-- [x] Set up development environment
-- [x] Create initial server implementation
-
----
-*Tasks updated: ${new Date().toISOString()}*
-`);
+  res.setHeader('Content-Type', 'application/json');
+  res.json({
+    status: "success",
+    user: user,
+    data: {
+      tasks: {
+        high_priority: [
+          {
+            id: "task-1",
+            title: "Complete JSON protocol proof of concept",
+            status: "in_progress",
+            due_date: "2025-07-08"
+          },
+          {
+            id: "task-2", 
+            title: "Test dynamic JSON content with AI assistants",
+            status: "pending",
+            due_date: "2025-07-08"
+          },
+          {
+            id: "task-3",
+            title: "Validate security boundary compliance",
+            status: "pending", 
+            due_date: "2025-07-09"
+          }
+        ],
+        medium_priority: [
+          {
+            id: "task-4",
+            title: "Document JSON protocol specification",
+            status: "pending",
+            due_date: "2025-07-10"
+          },
+          {
+            id: "task-5",
+            title: "Create structured authentication flows",
+            status: "pending",
+            due_date: "2025-07-12"
+          }
+        ],
+        recently_completed: [
+          {
+            id: "task-completed-1",
+            title: "Research MCP protocol alternatives",
+            completed_date: "2025-07-07"
+          },
+          {
+            id: "task-completed-2", 
+            title: "Set up development environment",
+            completed_date: "2025-07-06"
+          }
+        ]
+      }
+    },
+    metadata: {
+      last_updated: new Date().toISOString(),
+      total_tasks: 7,
+      data_type: "dynamic_task_list"
+    }
+  });
+});
 });
 
 // Health check for deployment
