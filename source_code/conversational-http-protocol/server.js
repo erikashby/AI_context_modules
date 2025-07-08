@@ -13,9 +13,9 @@ app.use(express.json());
 // In-memory session store (for proof of concept)
 const sessions = new Map();
 
-// Generate a simple session PIN
+// Generate a simple session PIN (hardcoded for testing)
 function generatePin() {
-  return Math.floor(1000 + Math.random() * 9000).toString();
+  return "1234"; // Hardcoded for testing purposes
 }
 
 // Root endpoint - shows available services
