@@ -257,7 +257,6 @@ app.get('/tasks', (req, res) => {
     }
   });
 });
-});
 
 // Health check for deployment
 app.get('/health', (req, res) => {
@@ -271,17 +270,17 @@ app.get('/health', (req, res) => {
 
 // 404 handler
 app.use('*', (req, res) => {
-  res.setHeader('Content-Type', 'text/markdown');
-  res.status(404).send(`# 404 - Service Not Found
-
-The requested service \`${req.originalUrl}\` was not found.
-
-## Available Services
-- [Home](/) - Service directory
-- [Notes](/notes?user=erikashby) - Personal notes
-- [Calendar](/calendar?user=erikashby) - Calendar data
-- [Tasks](/tasks?user=erikashby) - Task list
-`);
+  res.setHeader('Content-Type', 'application/json');
+  res.status(404).json({
+    error: "service_not_found",
+    message: `The requested service ${req.originalUrl} was not found`,
+    available_services: {
+      home: "/",
+      notes: "/notes?user=erikashby",
+      calendar: "/calendar?user=erikashby",
+      tasks: "/tasks?user=erikashby"
+    }
+  });
 });
 
 app.listen(PORT, () => {
