@@ -20,20 +20,19 @@ function generatePin() {
 
 // Root endpoint - shows available services
 app.get('/', (req, res) => {
-  res.setHeader('Content-Type', 'text/markdown');
-  res.send(`# AI Context Service
-
-Hello! I'm an AI-to-AI conversational HTTP service.
-
-## Available Services
-
-Try these URLs:
-- [Personal Notes](/notes?user=erikashby)
-- [Calendar](/calendar?user=erikashby) 
-- [Tasks](/tasks?user=erikashby)
-
-Each service will guide you through authentication and provide contextual data.
-`);
+  res.setHeader('Content-Type', 'text/html');
+  res.send(`<!DOCTYPE html>
+<html><head><title>AI Context Service</title></head><body>
+<h1>AI Context Service</h1>
+<p>Hello! I'm an AI-to-AI conversational HTTP service.</p>
+<h2>Available Services</h2>
+<ul>
+<li><a href="/notes?user=erikashby">Personal Notes</a></li>
+<li><a href="/calendar?user=erikashby">Calendar</a></li>
+<li><a href="/tasks?user=erikashby">Tasks</a></li>
+</ul>
+<p>Each service will guide you through authentication and provide contextual data.</p>
+</body></html>`);
 });
 
 // Notes service - multi-step authentication
@@ -54,23 +53,21 @@ Example: /notes?user=erikashby
     const sessionPin = generatePin();
     sessions.set(user, { pin: sessionPin, created: Date.now() });
     
-    res.setHeader('Content-Type', 'text/markdown');
-    return res.send(`# Personal Notes Service
-
-Hello! I'm responding to a request for ${user}'s personal notes.
-
-## Authentication Required
-
-To access ${user}'s notes, I need you to:
-
-1. **Ask ${user} for their PIN**
-2. **Then fetch this URL**: \`/notes?user=${user}&pin={PIN}\`
-
-Replace {PIN} with the actual PIN the user provides.
-
----
-*This is a dynamic AI-to-AI conversation. Authentication required to proceed.*
-`);
+    res.setHeader('Content-Type', 'text/html');
+    return res.send(`<!DOCTYPE html>
+<html><head><title>Personal Notes Service</title></head><body>
+<h1>Personal Notes Service</h1>
+<p>Hello! I'm responding to a request for ${user}'s personal notes.</p>
+<h2>Authentication Required</h2>
+<p>To access ${user}'s notes, I need you to:</p>
+<ol>
+<li><strong>Ask ${user} for their PIN</strong></li>
+<li><strong>Then fetch this URL</strong>: <code>/notes?user=${user}&pin={PIN}</code></li>
+</ol>
+<p>Replace {PIN} with the actual PIN the user provides.</p>
+<hr>
+<p><em>This is a dynamic AI-to-AI conversation. Authentication required to proceed.</em></p>
+</body></html>`);
   }
 
   // Step 2: Validate PIN and return notes
@@ -86,35 +83,38 @@ Please ask the user for the correct PIN and try again.
   }
 
   // Success! Return the actual notes
-  res.setHeader('Content-Type', 'text/markdown');
-  res.send(`# ${user}'s Personal Notes
-
-✅ **Authentication successful!**
-
-## Current Notes
-
-### Project Ideas
-- Build a conversational HTTP protocol for AI context
-- Create a markdown-based command system
-- Test AI-to-AI communication patterns
-
-### Meeting Notes
-- **Today**: Discussed MCP protocol alternatives
-- **Next**: Implement proof of concept for HTTP-markdown protocol
-
-### Personal Reminders
-- Review render.yaml deployment configuration
-- Test the conversational flow with Claude
-- Iterate on the protocol design
-
-### Context Data
-- User timezone: America/New_York
-- Preferred communication: Direct and concise
-- Current focus: Protocol experimentation
-
----
-*Session authenticated at ${new Date().toISOString()}*
-`);
+  res.setHeader('Content-Type', 'text/html');
+  res.send(`<!DOCTYPE html>
+<html><head><title>${user}'s Personal Notes</title></head><body>
+<h1>${user}'s Personal Notes</h1>
+<p>✅ <strong>Authentication successful!</strong></p>
+<h2>Current Notes</h2>
+<h3>Project Ideas</h3>
+<ul>
+<li>Build a conversational HTTP protocol for AI context</li>
+<li>Create a markdown-based command system</li>
+<li>Test AI-to-AI communication patterns</li>
+</ul>
+<h3>Meeting Notes</h3>
+<ul>
+<li><strong>Today</strong>: Discussed MCP protocol alternatives</li>
+<li><strong>Next</strong>: Implement proof of concept for HTTP-markdown protocol</li>
+</ul>
+<h3>Personal Reminders</h3>
+<ul>
+<li>Review render.yaml deployment configuration</li>
+<li>Test the conversational flow with Claude</li>
+<li>Iterate on the protocol design</li>
+</ul>
+<h3>Context Data</h3>
+<ul>
+<li>User timezone: America/New_York</li>
+<li>Preferred communication: Direct and concise</li>
+<li>Current focus: Protocol experimentation</li>
+</ul>
+<hr>
+<p><em>Session authenticated at ${new Date().toISOString()}</em></p>
+</body></html>`);
 });
 
 // Calendar service - different authentication pattern
