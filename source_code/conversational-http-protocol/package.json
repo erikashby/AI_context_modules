@@ -1,0 +1,21 @@
+{
+  "name": "conversational-http-protocol",
+  "version": "1.0.0",
+  "description": "AI-to-AI conversational HTTP protocol using markdown responses",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["ai", "http", "markdown", "conversational", "protocol"],
+  "author": "AI Context Service",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  }
+}
