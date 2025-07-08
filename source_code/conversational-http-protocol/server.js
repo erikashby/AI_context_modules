@@ -69,7 +69,7 @@ To access ${user}'s notes, I need you to:
 Replace {PIN} with the actual PIN the user provides.
 
 ---
-*This is a dynamic AI-to-AI conversation. The PIN for this session is: **${sessionPin}***
+*This is a dynamic AI-to-AI conversation. Authentication required to proceed.*
 `);
   }
 
