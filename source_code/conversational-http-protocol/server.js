@@ -20,136 +20,102 @@ function generatePin() {
 
 // Root endpoint - shows available services
 app.get('/', (req, res) => {
-  res.setHeader('Content-Type', 'application/json');
-  res.json({
-    service: "AI Context Service",
-    description: "Dynamic context data service",
-    endpoints: {
-      notes: "/notes?user=erikashby",
-      calendar: "/calendar?user=erikashby", 
-      tasks: "/tasks?user=erikashby"
-    },
-    timestamp: new Date().toISOString()
-  });
+  res.setHeader('Content-Type', 'text/html');
+  res.send(`<!DOCTYPE html>
+<html><head><title>AI Context Service</title></head><body>
+<h1>AI Context Service</h1>
+<p>Dynamic context data service with clean URLs</p>
+<h2>Available Services</h2>
+<ul>
+<li><a href="/notes/erikashby">Personal Notes</a> (Markdown)</li>
+<li><a href="/calendar/erikashby">Calendar</a> (HTML)</li>
+<li><a href="/tasks/erikashby">Tasks</a> (JSON)</li>
+</ul>
+<p>Testing different content types on clean URLs</p>
+</body></html>`);
 });
 
-// Notes service - immediate access (no authentication)
-app.get('/notes', (req, res) => {
-  const { user } = req.query;
+// Notes service - Markdown response on clean URL
+app.get('/notes/:user', (req, res) => {
+  const { user } = req.params;
   
-  if (!user) {
-    res.setHeader('Content-Type', 'application/json');
-    return res.json({
-      error: "missing_user_parameter",
-      message: "User parameter required"
-    });
-  }
+  res.setHeader('Content-Type', 'text/markdown');
+  res.send(`# ${user}'s Personal Notes
 
-  // Return notes immediately - no authentication required
-  res.setHeader('Content-Type', 'application/json');
-  res.json({
-    status: "success",
-    user: user,
-    authenticated: true,
-    data: {
-      personal_notes: {
-        project_ideas: [
-          "Build a conversational HTTP protocol for AI context",
-          "Create a structured data API for AI assistants",
-          "Test JSON-based dynamic context delivery"
-        ],
-        meeting_notes: [
-          {
-            date: "today",
-            topic: "Discussed MCP protocol alternatives and JSON approaches"
-          },
-          {
-            date: "next",
-            topic: "Implement proof of concept for dynamic JSON context"
-          }
-        ],
-        personal_reminders: [
-          "Review deployment configuration",
-          "Test JSON response with AI assistants", 
-          "Validate dynamic content delivery without prompt injection"
-        ],
-        context_metadata: {
-          user_timezone: "America/New_York",
-          communication_preference: "Direct and concise",
-          current_focus: "JSON protocol experimentation",
-          productivity_peak: "morning"
-        }
-      }
-    },
-    session_info: {
-      authenticated_at: new Date().toISOString(),
-      session_type: "dynamic_context_delivery"
-    }
-  });
+## Project Ideas
+- Build a conversational HTTP protocol for AI context
+- Create clean URL-based context APIs  
+- Test markdown delivery on path-based routing
+
+## Meeting Notes
+**Today**: Discovered AI assistant web content limitations
+- HTML content works ✅
+- JSON responses blocked ❌ 
+- URL parameters may be filtered ❌
+
+**Next**: Test clean URLs with different content types
+
+## Personal Reminders
+- Test /notes/user (markdown)
+- Test /calendar/user (HTML)
+- Test /tasks/user (JSON)
+- Validate which content types work
+
+## Context Metadata
+- User timezone: America/New_York
+- Communication preference: Direct and concise
+- Current focus: Content type experimentation
+- Last updated: ${new Date().toISOString()}
+
+---
+*This is a markdown file served from a clean URL path*`);
 });
 
-// Calendar service - different authentication pattern
-app.get('/calendar', (req, res) => {
-  const { user, confirm } = req.query;
+// Calendar service - HTML response on clean URL
+app.get('/calendar/:user', (req, res) => {
+  const { user } = req.params;
   
-  if (!user) {
-    res.setHeader('Content-Type', 'text/markdown');
-    return res.send(`# Error: Missing User
+  res.setHeader('Content-Type', 'text/html');
+  res.send(`<!DOCTYPE html>
+<html><head><title>${user}'s Calendar</title></head><body>
+<h1>${user}'s Calendar</h1>
 
-Please provide a user parameter in the URL.
-`);
-  }
+<h2>Today's Schedule</h2>
 
-  if (!confirm) {
-    res.setHeader('Content-Type', 'text/markdown');
-    return res.send(`# Calendar Access Request
+<h3>9:00 AM - 10:00 AM: Team Standup</h3>
+<ul>
+<li><strong>Location:</strong> Conference Room A</li>
+<li><strong>Attendees:</strong> Engineering Team</li>
+<li><strong>Notes:</strong> Daily sync and blockers review</li>
+</ul>
 
-I have calendar data for ${user}, but need confirmation.
+<h3>2:00 PM - 3:00 PM: Protocol Review</h3>
+<ul>
+<li><strong>Location:</strong> Virtual</li>
+<li><strong>Notes:</strong> Discuss content type testing results</li>
+<li><strong>Focus:</strong> AI assistant web content limitations</li>
+</ul>
 
-## Next Step
+<h3>4:00 PM - 5:00 PM: Development Session</h3>
+<ul>
+<li><strong>Location:</strong> Home Office</li>
+<li><strong>Focus:</strong> Clean URL implementation</li>
+<li><strong>Goal:</strong> Test markdown vs HTML vs JSON delivery</li>
+</ul>
 
-Ask ${user}: "Can I access your calendar data?"
+<h2>Tomorrow</h2>
 
-If they say yes, use this URL: \`/calendar?user=${user}&confirm=yes\`
-`);
-  }
+<h3>10:00 AM - 11:00 AM: Results Analysis</h3>
+<ul>
+<li><strong>Topic:</strong> Review which content types work with AI assistants</li>
+<li><strong>Decision:</strong> Choose optimal approach for context service</li>
+</ul>
 
-  if (confirm === 'yes') {
-    res.setHeader('Content-Type', 'text/markdown');
-    res.send(`# ${user}'s Calendar
+<hr>
+<p><em>Calendar data served as HTML from clean URL: /calendar/${user}</em></p>
+<p><em>Last updated: ${new Date().toISOString()}</em></p>
 
-## Today's Schedule
-
-### 9:00 AM - 10:00 AM
-**Team Standup**
-- Location: Conference Room A
-- Attendees: Engineering Team
-
-### 2:00 PM - 3:00 PM  
-**Protocol Review**
-- Location: Virtual
-- Notes: Discuss MCP alternatives
-
-### 4:00 PM - 5:00 PM
-**Coding Session**
-- Location: Home Office
-- Focus: Proof of concept development
-
-## Tomorrow
-
-### 10:00 AM - 11:00 AM
-**Product Planning**
-- Review protocol test results
-`);
-  } else {
-    res.setHeader('Content-Type', 'text/markdown');
-    res.send(`# Access Denied
-
-User ${user} did not grant calendar access.
-
-You can try asking again or use a different service.
-`);
-  }
+</body></html>`);
 });
 
 // Admin endpoint to check current PIN (for testing)
@@ -184,76 +150,72 @@ Session created: ${new Date(session.created).toISOString()}
 `);
 });
 
-// Tasks service - immediate access pattern
-app.get('/tasks', (req, res) => {
-  const { user } = req.query;
+// Tasks service - JSON response on clean URL
+app.get('/tasks/:user', (req, res) => {
+  const { user } = req.params;
   
-  if (!user) {
-    res.setHeader('Content-Type', 'application/json');
-    return res.json({
-      error: "missing_user_parameter",
-      message: "User parameter required"
-    });
-  }
-
   res.setHeader('Content-Type', 'application/json');
   res.json({
     status: "success",
     user: user,
+    content_type: "json",
+    url_type: "clean_path",
     data: {
       tasks: {
         high_priority: [
           {
             id: "task-1",
-            title: "Complete JSON protocol proof of concept",
+            title: "Test clean URL with JSON content",
             status: "in_progress",
-            due_date: "2025-07-08"
+            due_date: "2025-07-08",
+            description: "Validate if AI assistants can consume JSON from clean URLs"
           },
           {
             id: "task-2", 
-            title: "Test dynamic JSON content with AI assistants",
+            title: "Compare markdown vs HTML vs JSON responses",
             status: "pending",
-            due_date: "2025-07-08"
+            due_date: "2025-07-08",
+            description: "Determine which content types work with AI web fetching"
           },
           {
             id: "task-3",
-            title: "Validate security boundary compliance",
+            title: "Document AI assistant web content limitations",
             status: "pending", 
-            due_date: "2025-07-09"
+            due_date: "2025-07-09",
+            description: "Create findings report on content type restrictions"
           }
         ],
         medium_priority: [
           {
             id: "task-4",
-            title: "Document JSON protocol specification",
+            title: "Design optimal context delivery protocol",
             status: "pending",
-            due_date: "2025-07-10"
-          },
-          {
-            id: "task-5",
-            title: "Create structured authentication flows",
-            status: "pending",
-            due_date: "2025-07-12"
+            due_date: "2025-07-10",
+            description: "Based on content type test results"
           }
         ],
         recently_completed: [
           {
             id: "task-completed-1",
-            title: "Research MCP protocol alternatives",
-            completed_date: "2025-07-07"
+            title: "Discovered URL parameter limitations",
+            completed_date: "2025-07-08",
+            notes: "AI assistants may block URLs with query parameters"
           },
           {
             id: "task-completed-2", 
-            title: "Set up development environment",
-            completed_date: "2025-07-06"
+            title: "Confirmed HTML content works",
+            completed_date: "2025-07-08",
+            notes: "HTML responses are processed by AI assistants"
           }
         ]
       }
     },
     metadata: {
       last_updated: new Date().toISOString(),
-      total_tasks: 7,
-      data_type: "dynamic_task_list"
+      total_tasks: 6,
+      data_type: "json_task_list",
+      served_from: `/tasks/${user}`,
+      experiment: "content_type_testing"
     }
   });
 });
