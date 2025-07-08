@@ -181,6 +181,38 @@ You can try asking again or use a different service.
   }
 });
 
+// Admin endpoint to check current PIN (for testing)
+app.get('/admin/pin', (req, res) => {
+  const { user } = req.query;
+  
+  if (!user) {
+    res.setHeader('Content-Type', 'text/markdown');
+    return res.send(`# Admin: PIN Check
+
+Provide user parameter: /admin/pin?user=erikashby
+`);
+  }
+  
+  const session = sessions.get(user);
+  if (!session) {
+    res.setHeader('Content-Type', 'text/markdown');
+    return res.send(`# Admin: No Session
+
+No active session found for user ${user}.
+
+Request /notes?user=${user} first to generate a PIN.
+`);
+  }
+  
+  res.setHeader('Content-Type', 'text/markdown');
+  res.send(`# Admin: PIN for ${user}
+
+Current PIN: **${session.pin}**
+
+Session created: ${new Date(session.created).toISOString()}
+`);
+});
+
 // Tasks service - immediate access pattern
 app.get('/tasks', (req, res) => {
   const { user } = req.query;
