@@ -33,51 +33,19 @@ app.get('/', (req, res) => {
   });
 });
 
-// Notes service - multi-step authentication
+// Notes service - immediate access (no authentication)
 app.get('/notes', (req, res) => {
-  const { user, pin } = req.query;
+  const { user } = req.query;
   
   if (!user) {
-    res.setHeader('Content-Type', 'text/markdown');
-    return res.send(`# Error: Missing User
-
-Please provide a user parameter in the URL.
-Example: /notes?user=erikashby
-`);
-  }
-
-  // Step 1: Initial request - generate PIN and ask for it
-  if (!pin) {
-    const sessionPin = generatePin();
-    sessions.set(user, { pin: sessionPin, created: Date.now() });
-    
     res.setHeader('Content-Type', 'application/json');
     return res.json({
-      status: "authentication_required",
-      user: user,
-      message: "PIN required to access notes",
-      next_step: {
-        action: "provide_pin",
-        endpoint: `/notes?user=${user}&pin={PIN}`,
-        method: "GET"
-      },
-      session_created: new Date().toISOString()
+      error: "missing_user_parameter",
+      message: "User parameter required"
     });
   }
 
-  // Step 2: Validate PIN and return notes
-  const session = sessions.get(user);
-  if (!session || session.pin !== pin) {
-    res.setHeader('Content-Type', 'text/markdown');
-    return res.send(`# Authentication Failed
-
-Invalid PIN for user ${user}.
-
-Please ask the user for the correct PIN and try again.
-`);
-  }
-
-  // Success! Return the actual notes
+  // Return notes immediately - no authentication required
   res.setHeader('Content-Type', 'application/json');
   res.json({
     status: "success",
