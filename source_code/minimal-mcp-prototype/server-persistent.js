@@ -603,31 +603,49 @@ async function deleteFileOrFolder(targetPath) {
 async function getProjectStructure() {
   const structure = {};
   
-  async function buildStructure(currentPath, currentObj) {
+  async function buildStructure(currentPath, relativePath = '') {
     try {
       const items = await fs.readdir(currentPath, { withFileTypes: true });
       
+      // Separate directories and files
+      const directories = [];
+      const files = [];
+      
       for (const item of items) {
         if (item.isDirectory()) {
-          currentObj[item.name + '/'] = [];
-          await buildStructure(path.join(currentPath, item.name), currentObj[item.name + '/']);
+          directories.push(item.name);
         } else {
-          if (!Array.isArray(currentObj)) {
-            // Convert to array to hold files
-            const keys = Object.keys(currentObj);
-            currentObj.length = 0;
-            currentObj.push(...keys);
-          }
-          currentObj.push(item.name);
+          files.push(item.name);
         }
       }
+      
+      // Build the current level structure
+      const currentLevel = {};
+      
+      // Add files to current level
+      if (files.length > 0) {
+        files.forEach(file => {
+          currentLevel[file] = 'file';
+        });
+      }
+      
+      // Process directories recursively
+      for (const dirName of directories) {
+        const dirPath = path.join(currentPath, dirName);
+        const subStructure = await buildStructure(dirPath, path.join(relativePath, dirName));
+        currentLevel[dirName + '/'] = subStructure;
+      }
+      
+      return currentLevel;
+      
     } catch (error) {
       console.error(`Error reading directory ${currentPath}:`, error);
+      return {};
     }
   }
   
-  await buildStructure(PERSONAL_ORG_DIR, structure);
-  return structure;
+  const result = await buildStructure(PERSONAL_ORG_DIR);
+  return result;
 }
 
 // Function to create fresh server instance for each request
@@ -635,7 +653,7 @@ function createServer() {
   const server = new Server(
     {
       name: 'AI Context Service - Persistent Tech Proof',
-      version: '2.3.0',
+      version: '2.3.1',
     },
     {
       capabilities: {
