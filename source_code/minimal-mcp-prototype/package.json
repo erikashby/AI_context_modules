@@ -1,14 +1,15 @@
 {
   "name": "minimal-mcp-prototype",
-  "version": "1.0.0",
-  "description": "Minimal MCP server for context validation",
+  "version": "2.0.0",
+  "description": "AI Context Service - Tech Proof with context navigation",
   "main": "server.js",
   "scripts": {
-    "start": "node server-stateless.js",
+    "start": "node server-context.js",
+    "start:backup": "node server-stateless-BACKUP-hello-echo.js",
     "start:stdio": "node server.js",
     "start:railway": "node server-railway-mcp.js",
     "start:vercel": "node server-vercel.js",
-    "dev": "node server-railway-mcp.js",
+    "dev": "node server-context.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": ["mcp", "context", "ai", "prototype"],
