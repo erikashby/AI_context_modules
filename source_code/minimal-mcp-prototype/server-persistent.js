@@ -635,7 +635,7 @@ function createServer() {
   const server = new Server(
     {
       name: 'AI Context Service - Persistent Tech Proof',
-      version: '2.1.0',
+      version: '2.3.0',
     },
     {
       capabilities: {
@@ -747,6 +747,47 @@ function createServer() {
               }
             },
             required: ['project_id', 'file_path']
+          }
+        },
+        {
+          name: 'create_folder',
+          description: 'Create new directories in the project structure',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              project_id: { 
+                type: 'string', 
+                description: 'Project identifier' 
+              },
+              folder_path: { 
+                type: 'string', 
+                description: 'Folder path to create (e.g., projects/active/new-project)' 
+              }
+            },
+            required: ['project_id', 'folder_path']
+          }
+        },
+        {
+          name: 'delete_folder',
+          description: 'Delete directories and their contents (use with caution)',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              project_id: { 
+                type: 'string', 
+                description: 'Project identifier' 
+              },
+              folder_path: { 
+                type: 'string', 
+                description: 'Folder path to delete' 
+              },
+              force: {
+                type: 'boolean',
+                description: 'Force delete non-empty directory (default: false)',
+                default: false
+              }
+            },
+            required: ['project_id', 'folder_path']
           }
         }
       ]
@@ -926,6 +967,108 @@ function createServer() {
             }]
           };
 
+        case 'create_folder':
+          if (!args?.project_id || !args?.folder_path) {
+            throw new Error('project_id and folder_path parameters are required');
+          }
+          
+          const createFolderPath = await getFilePath(args.project_id, args.folder_path);
+          
+          // Check if folder already exists
+          try {
+            await fs.access(createFolderPath);
+            throw new Error(`Folder already exists: ${args.folder_path}`);
+          } catch (error) {
+            if (error.code !== 'ENOENT') {
+              throw error; // Re-throw if it's not a "doesn't exist" error
+            }
+          }
+          
+          // Create the directory
+          try {
+            await ensureDirectoryExists(createFolderPath);
+            
+            return {
+              content: [{
+                type: 'text',
+                text: JSON.stringify({
+                  project_id: args.project_id,
+                  folder_path: args.folder_path,
+                  operation: "create_folder",
+                  success: true,
+                  message: "Folder created successfully",
+                  storage_type: "persistent_file_system"
+                }, null, 2)
+              }]
+            };
+          } catch (error) {
+            throw new Error(`Failed to create folder: ${error.message}`);
+          }
+
+        case 'delete_folder':
+          if (!args?.project_id || !args?.folder_path) {
+            throw new Error('project_id and folder_path parameters are required');
+          }
+          
+          const deleteFolderPath = await getFilePath(args.project_id, args.folder_path);
+          
+          // Check if folder exists
+          try {
+            const stats = await fs.stat(deleteFolderPath);
+            if (!stats.isDirectory()) {
+              throw new Error(`Path is not a directory: ${args.folder_path}`);
+            }
+          } catch (error) {
+            if (error.code === 'ENOENT') {
+              throw new Error(`Folder not found: ${args.folder_path}`);
+            }
+            throw error;
+          }
+          
+          // Check if directory is empty unless force is true
+          const force = args.force || false;
+          if (!force) {
+            try {
+              const contents = await fs.readdir(deleteFolderPath);
+              if (contents.length > 0) {
+                throw new Error(`Cannot delete non-empty directory: ${args.folder_path}. Use force=true to delete with contents, or delete contents first.`);
+              }
+            } catch (error) {
+              if (error.message.includes('Cannot delete non-empty directory')) {
+                throw error;
+              }
+              throw new Error(`Failed to check directory contents: ${error.message}`);
+            }
+          }
+          
+          // Delete the directory
+          try {
+            if (force) {
+              // Force delete with contents
+              await fs.rm(deleteFolderPath, { recursive: true, force: true });
+            } else {
+              // Delete empty directory
+              await fs.rmdir(deleteFolderPath);
+            }
+            
+            return {
+              content: [{
+                type: 'text',
+                text: JSON.stringify({
+                  project_id: args.project_id,
+                  folder_path: args.folder_path,
+                  operation: "delete_folder",
+                  success: true,
+                  message: force ? "Folder and contents deleted successfully" : "Empty folder deleted successfully",
+                  force: force,
+                  storage_type: "persistent_file_system"
+                }, null, 2)
+              }]
+            };
+          } catch (error) {
+            throw new Error(`Failed to delete folder: ${error.message}`);
+          };
+
         default:
           throw new Error(`Unknown tool: ${name}`);
       }
@@ -1023,9 +1166,9 @@ app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
     service: 'AI Context Service - Persistent Tech Proof',
-    version: '2.1.0',
+    version: '2.3.0',
     transport: 'StreamableHTTP-Stateless',
-    features: ['context_navigation', 'persistent_storage', 'write_operations', 'delete_operations'],
+    features: ['context_navigation', 'persistent_storage', 'write_operations', 'delete_operations', 'folder_management'],
     storage: 'file_system'
   });
 });
@@ -1034,13 +1177,13 @@ app.get('/health', (req, res) => {
 app.get('/', (req, res) => {
   res.json({
     service: 'AI Context Service - Persistent Tech Proof',
-    version: '2.1.0',
+    version: '2.3.0',
     transport: 'StreamableHTTP-Stateless',
     endpoints: {
       health: '/health',
       mcp: '/mcp'
     },
-    tools: ['list_projects', 'explore_project', 'list_folder_contents', 'read_file', 'write_file', 'delete_file'],
+    tools: ['list_projects', 'explore_project', 'list_folder_contents', 'read_file', 'write_file', 'delete_file', 'create_folder', 'delete_folder'],
     storage: 'persistent_file_system'
   });
 });

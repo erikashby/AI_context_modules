@@ -1,6 +1,6 @@
 {
   "name": "minimal-mcp-prototype",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "AI Context Service - Tech Proof with context navigation",
   "main": "server.js",
   "scripts": {
