@@ -63,14 +63,8 @@ async function initializeFileSystem() {
   await ensureDirectoryExists(CONTEXT_DATA_DIR);
   await ensureDirectoryExists(PERSONAL_ORG_DIR);
   
-  // Check if data already exists
-  try {
-    await fs.access(path.join(PERSONAL_ORG_DIR, 'README.md'));
-    console.log('File system already initialized with existing data');
-    return;
-  } catch {
-    console.log('Creating initial file structure...');
-  }
+  // Create comprehensive structure (additive - preserves existing files)
+  console.log('Ensuring comprehensive organizational structure exists...');
   
   // Create comprehensive directory structure - CRITICAL for Claude organization
   const directories = [
@@ -514,11 +508,19 @@ Reusable templates for consistent approaches to common tasks.
 - [Priority 3]`
   };
   
-  // Write initial files
+  // Write initial files (only if they don't exist - preserves existing content)
   for (const [filePath, content] of Object.entries(initialFiles)) {
     const fullPath = path.join(PERSONAL_ORG_DIR, filePath);
     await ensureDirectoryExists(path.dirname(fullPath));
-    await fs.writeFile(fullPath, content, 'utf8');
+    
+    // Only write if file doesn't exist (preserves existing content)
+    try {
+      await fs.access(fullPath);
+      console.log(`Preserving existing file: ${filePath}`);
+    } catch {
+      await fs.writeFile(fullPath, content, 'utf8');
+      console.log(`Created new file: ${filePath}`);
+    }
   }
   
   console.log('File system initialized with sample content');
