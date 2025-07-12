@@ -4,7 +4,7 @@
   "description": "AI Context Service - Tech Proof with context navigation",
   "main": "server.js",
   "scripts": {
-    "start": "node server-context.js",
+    "start": "node server-persistent.js",
     "start:backup": "node server-stateless-BACKUP-hello-echo.js",
     "start:stdio": "node server.js",
     "start:railway": "node server-railway-mcp.js",
