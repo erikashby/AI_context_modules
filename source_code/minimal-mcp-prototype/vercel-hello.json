@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "hello-world-mcp.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/hello-world-mcp.js"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
