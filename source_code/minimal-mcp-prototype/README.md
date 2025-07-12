@@ -5,10 +5,11 @@ A minimal Model Context Protocol (MCP) server implementation for validating remo
 ## Overview
 
 This prototype validates the core technical feasibility of remote MCP servers by implementing:
-- **5 MCP Tools**: Context query and retrieval functions
-- **3 MCP Resources**: Static context data access
-- **2 MCP Prompts**: Context-aware prompt templates
-- **Health Check Endpoint**: Railway deployment monitoring
+- **2 MCP Tools**: Simple validation functions (`hello`, `echo`)
+- **1 MCP Resource**: Basic resource access (`hello://world`)
+- **1 MCP Prompt**: Simple prompt template (`hello_prompt`)
+- **Health Check Endpoint**: Render deployment monitoring
+- **Stateless Architecture**: StreamableHTTPServerTransport for reliable remote connections
 
 ## Architecture
 
@@ -16,26 +17,22 @@ This prototype validates the core technical feasibility of remote MCP servers by
 AI Assistant (Claude/ChatGPT) ←→ MCP Client ←→ MCP Server (This Code) ←→ Mock Context Data
 ```
 
-**Transport**: JSON-RPC 2.0 over HTTP with Streamable HTTP transport
+**Transport**: JSON-RPC 2.0 over HTTP with StreamableHTTPServerTransport (2025 standard)
+**Architecture**: Stateless - fresh server/transport instances per request
 **Authentication**: None (simplified for prototype validation)
+**Deployment**: Render.com with `render.yaml` configuration
 
 ## Features
 
 ### MCP Tools
-1. **get_current_projects** - Retrieve active projects with status and priorities
-2. **get_todays_schedule** - Get today's meetings and availability  
-3. **get_user_preferences** - Access user work patterns and communication preferences
-4. **query_context** - Search across all context data for specific information
-5. **get_project_details** - Get detailed information about a specific project
+1. **hello** - Say hello to someone (requires `name` parameter)
+2. **echo** - Echo back a message (requires `message` parameter)
 
 ### MCP Resources
-1. **user_profile** (`context://user_profile`) - User's basic profile and work patterns
-2. **current_projects** (`context://current_projects`) - List of active projects with status and deadlines
-3. **upcoming_meetings** (`context://upcoming_meetings`) - Scheduled meetings and calendar events
+1. **hello://world** - Simple "Hello, World!" resource for testing connectivity
 
 ### MCP Prompts
-1. **daily_planning** - Help plan the day based on schedule, projects, and preferences
-2. **project_status** - Summarize current project status and next actions
+1. **hello_prompt** - Generate a friendly greeting prompt (accepts optional `name` parameter)
 
 ## Quick Start
 
@@ -63,48 +60,53 @@ AI Assistant (Claude/ChatGPT) ←→ MCP Client ←→ MCP Server (This Code) �
 
 ### Testing MCP Functionality
 
-The server runs both:
+The server runs:
 - **HTTP Health Check Server** on port 3000 (or PORT env var)
-- **MCP Server** via STDIO transport for MCP client connections
+- **MCP Server** via `/mcp` endpoint using StreamableHTTPServerTransport
+- **Stateless Architecture** - creates fresh server/transport instances per request
 
 **Health Check Response**:
 ```json
 {
   "status": "ok",
-  "timestamp": "2025-07-06T...",
-  "service": "AI Context Service MCP Server",
-  "version": "1.0.0"
+  "service": "Hello World MCP Server (Stateless)",
+  "version": "1.0.0",
+  "transport": "StreamableHTTP-Stateless"
 }
 ```
 
-## Railway Deployment
+## Render Deployment
 
-### Deploy to Railway
+### Deploy to Render
 
 1. **Connect Repository**:
-   - Go to [Railway.app](https://railway.app)
+   - Go to [Render.com](https://render.com)
    - Connect your GitHub repository
    - Select the `source_code/minimal-mcp-prototype` directory
 
 2. **Automatic Deployment**:
-   - Railway detects Node.js project from `package.json`
-   - Uses `railway.json` configuration for build and deployment
+   - Render detects Node.js project from `package.json`
+   - Uses `render.yaml` configuration for build and deployment
    - Automatically assigns PORT environment variable
 
 3. **Verify Deployment**:
    ```bash
-   curl https://your-app.railway.app/health
+   curl https://your-app.onrender.com/health
    ```
 
-### Railway Configuration
+**Current Working Deployment**: `https://ai-context-service-private.onrender.com/mcp`
 
-The `railway.json` file configures:
-- **Builder**: NIXPACKS (automatic Node.js detection)
+### Render Configuration
+
+The `render.yaml` file configures:
+- **Service Type**: web
+- **Environment**: node
+- **Build Command**: `npm install`
 - **Start Command**: `npm start`
 - **Health Check**: `/health` endpoint monitoring
 
 **Environment Variables**:
-- `PORT` - Automatically provided by Railway
+- `PORT` - Automatically provided by Render
 - `NODE_ENV` - Set to "production" for deployed environment
 
 ## AI Assistant Integration
@@ -121,7 +123,7 @@ The `railway.json` file configures:
          "command": "npx",
          "args": ["-y", "@modelcontextprotocol/server-remote"],
          "env": {
-           "MCP_SERVER_URL": "https://your-app.railway.app"
+           "MCP_SERVER_URL": "https://ai-context-service-private.onrender.com/mcp"
          }
        }
      }
@@ -130,8 +132,9 @@ The `railway.json` file configures:
 
 3. **Test Connection**:
    - Start a new conversation in Claude Desktop
-   - Ask: "What are my current projects?"
-   - Claude should retrieve and display mock project data
+   - Ask: "Say hello to John" or "Echo this message: test"
+   - Claude should successfully execute the tools and display responses
+   - **Verified Working**: This configuration successfully connects Claude Desktop to the remote MCP server
 
 ### ChatGPT Integration
 
@@ -141,66 +144,54 @@ ChatGPT MCP support details to be documented during testing phase.
 
 ### Tools API
 
-**get_current_projects**
-- Description: Retrieve list of current active projects
-- Parameters: None
-- Returns: Array of project objects with status and priorities
+**hello**
+- Description: Say hello to someone
+- Parameters: `name` (string, required) - Name of person to greet
+- Returns: Friendly greeting message
+- Example: "Hello, John! Nice to meet you."
 
-**get_todays_schedule**
-- Description: Get today's meetings and availability
-- Parameters: None  
-- Returns: Today's meetings filtered by current date
-
-**get_user_preferences**
-- Description: Access user work patterns and communication preferences
-- Parameters: None
-- Returns: User preferences object
-
-**query_context**
-- Description: Search across all context data
-- Parameters: `query` (string, required) - Search term or question
-- Returns: Relevant context data matching the query
-
-**get_project_details**
-- Description: Get detailed information about a specific project
-- Parameters: `project_id` (string, required) - Project identifier
-- Returns: Full project details or error if not found
+**echo**
+- Description: Echo back a message
+- Parameters: `message` (string, required) - Message to echo back
+- Returns: The same message prefixed with "Echo:"
+- Example: "Echo: test message"
 
 ### Resources API
 
 Resources are accessible via MCP protocol using these URIs:
-- `context://user_profile` - User profile and work patterns
-- `context://current_projects` - Active projects list
-- `context://upcoming_meetings` - Scheduled meetings
+- `hello://world` - Simple "Hello, World!" text resource for connectivity testing
 
 ### Prompts API
 
-**daily_planning**
-- Generates context-aware daily planning prompts
-- Includes user schedule, project deadlines, and productivity patterns
+**hello_prompt**
+- Description: Generate a friendly greeting prompt
+- Parameters: `name` (string, optional) - Name of person to greet (defaults to "friend")
+- Returns: Prompt template for generating friendly greetings
+- Example: "Please greet John in a friendly and professional manner."
 
-**project_status**
-- Generates project status summary prompts
-- Includes project overview with priorities and deadlines
+## Implementation Details
 
-## Mock Data Schema
+### Stateless Architecture
 
-The prototype uses realistic mock data in `context-data.json`:
+The key breakthrough was implementing a **stateless architecture** using `StreamableHTTPServerTransport`:
 
-```json
-{
-  "user_profile": {
-    "name": "Test User",
-    "timezone": "America/New_York",
-    "work_schedule": "9am-5pm weekdays",
-    "productivity_peak": "morning"
-  },
-  "current_projects": [...],
-  "upcoming_meetings": [...],
-  "preferences": {...},
-  "recent_context": [...]
-}
+```javascript
+// Fresh server/transport created for each request
+app.all('/mcp', async (req, res) => {
+  const server = createServer();
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: undefined // Stateless mode - CRITICAL
+  });
+  await server.connect(transport);
+  await transport.handleRequest(req, res, req.body);
+});
 ```
+
+### Key Success Factors
+- **sessionIdGenerator: undefined** - Enables stateless operation
+- **Fresh instances per request** - Avoids session conflicts
+- **Proper cleanup** - Resources cleaned up on request close
+- **StreamableHTTPServerTransport** - Uses 2025 standard (not deprecated SSE)
 
 ## Development
 
@@ -208,13 +199,18 @@ The prototype uses realistic mock data in `context-data.json`:
 ```
 minimal-mcp-prototype/
 ├── package.json              # Dependencies and scripts
-├── server.js                 # Main MCP server implementation
-├── context-data.json        # Mock context data
-├── mcp-config.json          # MCP server configuration
-├── railway.json             # Railway deployment config
+├── server-stateless.js       # CURRENT: Working stateless MCP server (npm start)
+├── server.js                 # Alternative: STDIO transport version
+├── server-*.js               # Various implementation attempts
+├── render.yaml               # Render deployment configuration
 ├── .gitignore               # Git ignore rules
 └── README.md                # This file
 ```
+
+### Key Files
+- **server-stateless.js**: The working remote MCP server implementation
+- **render.yaml**: Deployment configuration for Render.com
+- **package.json**: Defines `npm start` to run `server-stateless.js`
 
 ### Key Dependencies
 - `@modelcontextprotocol/sdk` - Official MCP SDK
@@ -243,22 +239,24 @@ All MCP operations are logged for debugging:
 ### Manual Testing Checklist
 
 **Local Testing**:
-- [ ] Server starts without errors
-- [ ] Health check endpoint responds
-- [ ] All 5 tools return correct mock data
-- [ ] All 3 resources are accessible
-- [ ] All 2 prompts generate correctly
-- [ ] Error handling works for invalid requests
+- [x] Server starts without errors
+- [x] Health check endpoint responds
+- [x] All 2 tools (`hello`, `echo`) work correctly
+- [x] Resource (`hello://world`) is accessible
+- [x] Prompt (`hello_prompt`) generates correctly
+- [x] Error handling works for invalid requests
 
 **Deployment Testing**:
-- [ ] Railway deployment succeeds
-- [ ] Remote health check responds
-- [ ] MCP protocol works over public internet
+- [x] Render deployment succeeds
+- [x] Remote health check responds at `/health`
+- [x] MCP protocol works over public internet
+- [x] Stateless architecture handles concurrent requests
 
 **AI Assistant Testing**:
-- [ ] Claude Desktop connects to remote server
-- [ ] Context data is retrieved correctly in conversations
-- [ ] Connection remains stable during use
+- [x] Claude Desktop connects to remote server
+- [x] Tools are visible and executable in Claude Desktop UI
+- [x] Connection remains stable during use
+- [x] **VERIFIED WORKING**: `https://ai-context-service-private.onrender.com/mcp`
 
 ### Performance Metrics
 
@@ -287,10 +285,11 @@ All MCP operations are logged for debugging:
 - Check JSON-RPC 2.0 message format
 - Review server logs for MCP request/response details
 
-**Railway Deployment Fails**:
-- Check `railway.json` configuration
-- Verify `package.json` has correct start script
-- Review Railway build logs for errors
+**Render Deployment Fails**:
+- Check `render.yaml` configuration
+- Verify `package.json` has correct start script (`npm start` → `node server-stateless.js`)
+- Review Render build logs for errors
+- Ensure Node.js version >= 18.0.0 in `package.json` engines
 
 ### Debug Mode
 
@@ -333,4 +332,7 @@ MIT License - See package.json for details.
 
 ---
 
-**Note**: This prototype validates the core technical assumption that remote MCP servers can reliably provide context to AI assistants, enabling the AI Context Service business model.
+**Status**: ✅ **VALIDATION COMPLETE** - This prototype successfully validates that remote MCP servers can reliably connect to AI assistants like Claude Desktop, proving the core technical feasibility for the AI Context Service business model.
+
+**Working Deployment**: `https://ai-context-service-private.onrender.com/mcp`
+**Next Phase**: Ready for production architecture with authentication, real data integration, and database layer.
