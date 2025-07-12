@@ -72,22 +72,39 @@ async function initializeFileSystem() {
     console.log('Creating initial file structure...');
   }
   
-  // Create directory structure
+  // Create comprehensive directory structure - CRITICAL for Claude organization
   const directories = [
     'current-status',
+    'planning',
+    'planning/2025',
     'planning/2025/2025-07-06',
+    'planning/templates',
+    'projects',
+    'projects/active',
     'projects/active/johnson-presentation',
     'projects/active/q3-budget-planning',
+    'projects/planning',
     'projects/planning/team-expansion',
+    'projects/planning/office-renovation',
+    'projects/completed',
     'projects/completed/website-redesign',
-    'goals-and-vision'
+    'projects/completed/q2-marketing-campaign',
+    'goals-and-vision',
+    'goals-and-vision/quarterly',
+    'goals-and-vision/monthly',
+    'decisions',
+    'decisions/pending',
+    'decisions/made',
+    'resources',
+    'resources/templates',
+    'resources/reference'
   ];
   
   for (const dir of directories) {
     await ensureDirectoryExists(path.join(PERSONAL_ORG_DIR, dir));
   }
   
-  // Create initial files with sample content
+  // Create comprehensive initial files - ORGANIZATIONAL FRAMEWORK
   const initialFiles = {
     'README.md': `# Personal Organization
 
@@ -95,9 +112,19 @@ This project contains daily planning, projects, and life management context.
 
 ## Folder Structure
 - current-status/ - Current priorities and this week's focus
-- planning/ - Daily and weekly planning notes
+- planning/ - Daily and weekly planning notes, templates
 - projects/ - Active, planning, and completed projects
-- goals-and-vision/ - Long-term goals and vision`,
+- goals-and-vision/ - Long-term goals, quarterly and monthly objectives
+- decisions/ - Pending and made decisions tracking
+- resources/ - Templates, references, and reusable content
+
+## How to Use This Structure
+1. **Current Status**: Start here for immediate priorities and weekly focus
+2. **Planning**: Navigate by year/week for detailed daily and weekly planning
+3. **Projects**: Organized by status (active/planning/completed) for project management
+4. **Goals & Vision**: Hierarchical goal setting from life vision to monthly objectives
+5. **Decisions**: Track important decisions with context and outcomes
+6. **Resources**: Templates and reference materials for consistent processes`,
 
     'current-status/README.md': `# Current Status
 
@@ -188,7 +215,303 @@ Long-term direction and annual objectives`,
 - Johnson presentation and renewal
 - Q3 budget planning and execution
 - Team expansion and onboarding
-- Half marathon training consistency`
+- Half marathon training consistency`,
+
+    // Planning structure
+    'planning/README.md': `# Planning
+
+Daily and weekly planning notes organized by year and week.
+
+## Structure
+- 2025/ - Current year planning
+- templates/ - Reusable planning templates
+
+## Usage
+- Navigate to specific weeks for detailed daily planning
+- Use templates for consistent planning approaches`,
+
+    'planning/2025/README.md': `# 2025 Planning
+
+Weekly planning organized by week starting dates.
+
+## Current Weeks
+- 2025-07-06/ - Week of July 6, 2025`,
+
+    'planning/2025/2025-07-06/weekly_notes_2025-07-06.md': `# Weekly Notes - Week of July 6, 2025
+
+## Week Overview
+This is execution week - focus on delivering the Johnson presentation and advancing Q3 planning.
+
+## Weekly Priorities
+1. **Johnson Presentation** - Complete and deliver by Thursday
+2. **Budget Planning** - Collect all department input
+3. **Team Development** - Successful new hire onboarding
+
+## Energy Management
+- **Peak Focus**: Monday-Wednesday mornings
+- **Administrative**: Wednesday afternoons
+- **Creative Work**: Tuesday mornings
+- **Meetings**: Thursday-Friday
+
+## Weekly Challenges
+- Johnson presentation timing is tight
+- Coordinating with multiple departments for budget input
+- Balancing new hire support with other priorities
+
+## Weekly Wins Target
+- Successful presentation delivery
+- Complete budget preparation
+- New team member feeling welcomed and prepared`,
+
+    'planning/2025/2025-07-06/daily_notes_2025-07-12.md': `# Daily Notes - Friday, July 12, 2025
+
+## Today's Priority
+**Main Focus**: Context system testing and validation
+
+## Schedule
+- **9:00am**: Team standup
+- **10:00am**: Context system development (AI assistant collaboration)
+- **12:00pm**: Lunch
+- **1:00pm**: System testing and deployment
+- **3:00pm**: Documentation and validation
+- **4:00pm**: Planning for next phase
+- **5:00pm**: Week wrap-up
+
+## Key Tasks
+- [x] Test context navigation system
+- [x] Implement persistent storage
+- [x] Add write/delete capabilities
+- [ ] Validate full organizational structure
+- [ ] Plan Phase 2 architecture
+
+## Notes
+- Context system working excellently with Claude Desktop
+- Persistent storage provides foundation for real planning workflows
+- Organizational structure critical for AI understanding
+
+## Weekend Prep
+- Review week accomplishments
+- Plan Monday priorities
+- Personal time and family activities`,
+
+    // Projects structure
+    'projects/README.md': `# Projects
+
+Organized by status: active, planning, completed
+
+## Structure
+- active/ - Currently executing projects
+- planning/ - Projects in planning phase
+- completed/ - Finished projects with lessons learned
+
+## Project Management Approach
+1. **Planning Phase**: Define scope, timeline, resources
+2. **Active Phase**: Execute with regular check-ins
+3. **Completion Phase**: Document outcomes and lessons`,
+
+    'projects/active/README.md': `# Active Projects
+
+Currently executing projects requiring regular attention.
+
+## Current Active Projects
+- johnson-presentation/ - Major client renewal presentation
+- q3-budget-planning/ - Quarterly budget allocation planning`,
+
+    'projects/active/johnson-presentation/project-overview.md': `# Johnson Presentation Project
+
+## Project Details
+- **Client**: Johnson & Associates
+- **Deadline**: Thursday, July 17, 2025 at 2pm
+- **Duration**: 30 minutes (25 min presentation + 5 min Q&A)
+- **Audience**: 8 senior executives
+- **Objective**: Secure $2M contract renewal
+
+## Current Status (95% Complete)
+- ✅ Research and data analysis
+- ✅ Slide deck structure
+- ✅ Key messaging and storyline
+- ✅ Supporting data and charts
+- 🔄 Final slide polish (in progress)
+- ⏳ Practice and timing refinement
+- ⏳ Q&A preparation
+
+## Next Actions
+- [ ] Complete final slide edits
+- [ ] Full practice run with timing
+- [ ] Prepare for likely questions
+- [ ] Confirm presentation tech setup
+
+## Success Criteria
+- Message clarity and impact
+- Timing: exactly 25 minutes
+- Executive engagement
+- Contract renewal commitment`,
+
+    'projects/planning/README.md': `# Planning Projects
+
+Projects in planning phase before execution begins.
+
+## Current Planning Projects
+- team-expansion/ - Growing team from 6 to 8 people
+- office-renovation/ - Updating workspace for team growth`,
+
+    'projects/completed/README.md': `# Completed Projects
+
+Finished projects with outcomes and lessons learned.
+
+## Recent Completions
+- website-redesign/ - Company website overhaul (June 2025)
+- q2-marketing-campaign/ - Q2 lead generation campaign (June 2025)`,
+
+    // Goals and vision expanded
+    'goals-and-vision/quarterly/README.md': `# Quarterly Goals
+
+Goals broken down by quarter for focused execution.
+
+## 2025 Quarters
+- Q3 2025 - Current quarter focus`,
+
+    'goals-and-vision/quarterly/q3-2025-goals.md': `# Q3 2025 Goals
+
+## Quarter Theme: "Scale & Systemize"
+
+## Primary Objectives
+
+### 1. Revenue Acceleration
+- **Johnson renewal**: $2M contract (July)
+- **New client acquisition**: 2 major prospects (Aug-Sep)
+- **Upsell existing clients**: 30% increase target
+- **Target**: $750K Q3 revenue
+
+### 2. Operational Excellence
+- **Process documentation**: 100% client workflows
+- **Team efficiency**: 20% productivity improvement
+- **Quality metrics**: <2% error rate
+- **Client satisfaction**: 95%+ NPS score
+
+### 3. Team Building
+- **New hire integration**: 2 team members
+- **Skills development**: Individual growth plans
+- **Culture strengthening**: Team events, recognition
+- **Leadership pipeline**: Identify future leaders`,
+
+    // Decisions tracking
+    'decisions/README.md': `# Decisions
+
+Track important decisions with context and outcomes.
+
+## Structure
+- pending/ - Decisions that need to be made
+- made/ - Completed decisions with rationale and outcomes
+
+## Decision Framework
+1. **Context**: Why is this decision needed?
+2. **Options**: What are the alternatives?
+3. **Criteria**: How will we evaluate options?
+4. **Decision**: What was chosen and why?
+5. **Outcome**: How did it work out?`,
+
+    'decisions/pending/README.md': `# Pending Decisions
+
+Decisions that need to be made with deadlines and context.`,
+
+    'decisions/pending/q3-budget-allocation.md': `# Q3 Budget Allocation Decision
+
+## Context
+$50K discretionary budget for Q3 needs allocation across departments.
+
+## Options
+- A) New marketing campaign ($30K marketing, $20K ops)
+- B) Additional developer hire ($40K hiring, $10K equipment)
+- C) Office equipment upgrade ($25K equipment, $25K contingency)
+
+## Decision Criteria
+- Impact on Q3 revenue targets
+- Team productivity improvement
+- Long-term strategic value
+- Risk level
+
+## Input Needed
+- Department priorities survey
+- ROI projections for each option
+- Team capacity assessment
+
+## Deadline
+Friday July 18, 2025
+
+## Status
+Gathering input from department heads`,
+
+    // Resources and templates
+    'resources/README.md': `# Resources
+
+Templates, references, and reusable content for consistent processes.
+
+## Structure
+- templates/ - Reusable templates for common tasks
+- reference/ - Reference materials and guides`,
+
+    'resources/templates/README.md': `# Templates
+
+Reusable templates for consistent approaches to common tasks.
+
+## Available Templates
+- daily-planning-template.md - Daily planning structure
+- weekly-review-template.md - Weekly review format
+- project-kickoff-template.md - New project setup
+- decision-record-template.md - Decision documentation`,
+
+    'resources/templates/daily-planning-template.md': `# Daily Planning Template
+
+## Date: [YYYY-MM-DD]
+
+## Today's Priority
+**Main Focus**: [One key objective for the day]
+
+## Schedule
+- **[Time]**: [Activity/Meeting]
+- **[Time]**: [Activity/Meeting]
+- **[Time]**: [Activity/Meeting]
+
+## Key Tasks
+- [ ] [Important task 1]
+- [ ] [Important task 2]
+- [ ] [Important task 3]
+
+## Notes
+[Daily observations, insights, challenges]
+
+## Tomorrow Prep
+[What needs to be prepared for tomorrow]`,
+
+    'resources/templates/weekly-review-template.md': `# Weekly Review Template
+
+## Week of [Date Range]
+
+## Weekly Theme
+**"[Theme Name]"** - [Brief description of week's focus]
+
+## Accomplishments
+- ✅ [Achievement 1]
+- ✅ [Achievement 2]
+- ✅ [Achievement 3]
+
+## Challenges
+- [Challenge 1 and how it was addressed]
+- [Challenge 2 and lessons learned]
+
+## Key Metrics
+- [Metric 1]: [Result]
+- [Metric 2]: [Result]
+
+## Lessons Learned
+- [Learning 1]
+- [Learning 2]
+
+## Next Week Focus
+- [Priority 1]
+- [Priority 2]
+- [Priority 3]`
   };
   
   // Write initial files
