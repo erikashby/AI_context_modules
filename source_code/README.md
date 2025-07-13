@@ -1,4 +1,5 @@
 # Source Code
+.
 
 This folder contains the actual code implementation for the AI Context Service product.
 
@@ -19,4 +20,4 @@ Houses the working code that will become the MCP-based AI context service, inclu
 - Data connectors (calendar, tasks, etc.)
 - Context schemas and data models
 - API endpoints and interfaces
-- Testing and deployment scripts
+- Testing and deployment scripts 
