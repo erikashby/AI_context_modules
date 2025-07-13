@@ -170,6 +170,17 @@
   },
   "active": "19f28d6dbf93602b",
   "lastOpenFiles": [
+    "source_code/minimal-mcp-prototype/server-auth-protected.js",
+    "source_code/minimal-mcp-prototype/context-data/personal-organization/goals-and-vision/README.md",
+    "source_code/minimal-mcp-prototype/context-data/personal-organization/goals-and-vision/annual-goals.md",
+    "source_code/minimal-mcp-prototype/context-data/personal-organization/current-status/this-week.md",
+    "source_code/minimal-mcp-prototype/context-data/personal-organization/current-status/README.md",
+    "source_code/minimal-mcp-prototype/context-data/personal-organization/current-status/priorities.md",
+    "source_code/minimal-mcp-prototype/context-data/personal-organization/goals-and-vision",
+    "source_code/minimal-mcp-prototype/context-data/personal-organization/README.md",
+    "source_code/minimal-mcp-prototype/context-data/personal-organization/current-status",
+    "source_code/minimal-mcp-prototype/context-data/personal-organization",
+    "source_code/minimal-mcp-prototype/context-data",
     "product_and_engineering_documentation/phase-1-tech-proof/tech-proof-user-story.md",
     "product_and_engineering_documentation/phase-1-auth-investigation/Sprint Plan - Auth Investigation.md",
     "product_and_engineering_documentation/phase-1-auth-investigation",
@@ -178,10 +189,6 @@
     "source_code/conversational-http-protocol/node_modules/has-symbols/test/tests.js",
     "source_code/conversational-http-protocol/node_modules/has-symbols/test/shams",
     "source_code/conversational-http-protocol/node_modules/has-symbols/test/index.js",
-    "source_code/conversational-http-protocol/node_modules/has-symbols/LICENSE",
-    "source_code/conversational-http-protocol/node_modules/has-symbols/index.d.ts",
-    "source_code/conversational-http-protocol/node_modules/has-symbols/tsconfig.json",
-    "source_code/conversational-http-protocol/node_modules/has-symbols/test",
     "source_code/conversational-http-protocol/node_modules/has-symbols/README.md",
     "source_code/conversational-http-protocol/node_modules/has-symbols/CHANGELOG.md",
     "source_code/conversational-http-protocol/node_modules/gopd/README.md",
@@ -198,13 +205,6 @@
     "product_and_engineering_documentation/phase-1-foundation/phase-1-lessons-learned.md",
     "product_and_engineering_documentation/phase-1-foundation/phase-1-bugs-and-issues.md",
     "product_and_engineering_documentation/phase-1-foundation/minimal-tech-prototype.md",
-    "product_and_engineering_documentation/phase-1-foundation/manual-uat-checklist.md",
-    "product_and_engineering_documentation/phase-1-foundation/engineering-manager-review.md",
-    "product_and_engineering_documentation/phase-1-foundation/development-plan-minimal-prototype.md",
-    "product_and_engineering_documentation/phase-1-foundation/ai-developer-prompt.md",
-    "source_code/conversational-http-protocol/node_modules/vary/README.md",
-    "source_code/conversational-http-protocol/node_modules/vary/HISTORY.md",
-    "source_code/conversational-http-protocol/node_modules/utils-merge/README.md",
-    "source_code/conversational-http-protocol/node_modules/toidentifier/README.md"
+    "product_and_engineering_documentation/phase-1-foundation/manual-uat-checklist.md"
   ]
 }

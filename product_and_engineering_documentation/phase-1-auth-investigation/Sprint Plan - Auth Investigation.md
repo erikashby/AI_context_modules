@@ -1,7 +1,10 @@
 # 🏗 Sprint Plan: `sprint-1-auth-investigation`
 
 **Sprint Goal:**  
-Enable a prototype MCP server to support OAuth 2.1 + PKCE via Auth0, serve proper metadata, validate tokens, and support Claude-style secure tool access.
+Create an auth-protected version of the existing working MCP server (`server-persistent.js`), implementing OAuth 2.1 + PKCE via Auth0 to secure the current context navigation tools and file operations.
+
+**Base Architecture:**  
+Build on proven `server-persistent.js` which already has working MCP tools, Claude Desktop integration, and persistent file storage. Create new `server-auth-protected.js` while preserving current working system.
 
 ---
 
@@ -20,15 +23,15 @@ Enable a prototype MCP server to support OAuth 2.1 + PKCE via Auth0, serve prope
 
 | Task ID | Title | Description |
 |--------|-------|-------------|
-| **AI-1** | Initialize FastAPI Project | Scaffold project with `FastAPI`, `httpx`, `authlib`, `python-dotenv`. Structure app for config, routes, and token validation. |
-| **AI-2** | Implement `.env` Config Loader | Load `.env` for `AUTH0_DOMAIN` and `AUTH0_AUDIENCE`, and raise errors if missing. |
-| **AI-3** | Serve `/.well-known/prm.json` | Serve static JSON with metadata: `authorization_servers`, scopes, token endpoints, etc. |
-| **AI-4** | Implement `/tool/summary` Endpoint | Return dummy content (e.g., JSON response). This should be protected by valid JWT access tokens. |
-| **AI-5** | JWT Validation Logic | Parse `Authorization: Bearer <token>`, fetch JWKs, validate using RS256, check audience and expiration. |
-| **AI-6** | 401 Fallback with `WWW-Authenticate` | If no token or bad token, return 401 with MCP-compliant header and `auth_param` JSON. |
-| **AI-7** | Test Route (Optional) | Add `/tool/test` or similar route to manually test token or user claims. |
-| **AI-8** | Add README.md | Auto-generate usage notes and `.env` instructions for local dev and testing. |
-| **AI-9** | MCP Inspector Compatibility | Ensure `/tool/summary` passes `npx @modelcontextprotocol/inspector` with valid tokens. |
+| **AI-1** | Create Auth-Protected Server Base | Copy `server-persistent.js` → `server-auth-protected.js`. Add auth dependencies: `jsonwebtoken`, `jwks-rsa`, `node-fetch`, `dotenv`. |
+| **AI-2** | Implement Environment Config | Add `.env` loader for `AUTH0_DOMAIN`, `AUTH0_AUDIENCE`, `AUTH0_CLIENT_ID`. Validate required variables on startup. |
+| **AI-3** | Add JWT Validation Middleware | Create `validateJWT()` function: parse Bearer token, fetch Auth0 JWKs, validate RS256 signature, check audience/expiration. |
+| **AI-4** | Protect Existing MCP Endpoint | Add auth middleware to `/mcp` route. Existing tools (`navigate-context`, `write-file`, `read-context`, etc.) now require valid JWT. |
+| **AI-5** | Serve Protected Resource Metadata | Add `/.well-known/prm.json` endpoint exposing current MCP tools as protected resources with required scopes. |
+| **AI-6** | Implement 401 Authentication Flow | Return 401 with MCP-compliant `WWW-Authenticate` header when no/invalid token. Include `auth_param` JSON for OAuth flow. |
+| **AI-7** | Add Auth-Aware Health Check | Create `/health/auth` endpoint showing auth status, JWT validation capability, and Auth0 connectivity. |
+| **AI-8** | Update Package Scripts | Add `start:auth` script and document how to switch between auth/non-auth versions. |
+| **AI-9** | Create Auth Testing Guide | Document how to get tokens from Auth0 and test protected endpoints manually before MCP Inspector validation. |
 
 ---
 
@@ -37,9 +40,9 @@ Enable a prototype MCP server to support OAuth 2.1 + PKCE via Auth0, serve prope
 | Task ID | Title | Description |
 |--------|-------|-------------|
 | **HUMAN-1** | Create Auth0 Account & Tenant | Sign up at [auth0.com](https://auth0.com) and create a tenant. |
-| **HUMAN-2** | Create Auth0 Application | Go to Applications → Create App → select "Regular Web App". Save **Client ID** and **Domain**. |
-| **HUMAN-3** | Create Auth0 API | Go to APIs → Create API. Use something like `https://mcp.tools.local` as the identifier (this is the `audience`). |
-| **HUMAN-4** | Add API Scopes | Define scopes like `tools:summary`, `tools:query` in the API's Permissions tab. |
+| **HUMAN-2** | Create Auth0 Machine-to-Machine App | Create M2M application for MCP client authentication. Save **Client ID**, **Client Secret**, **Domain**. |
+| **HUMAN-3** | Create Auth0 API for MCP Tools | Create API with identifier like `https://mcp.contextservice.local`. This becomes the JWT audience. |
+| **HUMAN-4** | Define MCP Tool Scopes | Add scopes matching existing tools: `mcp:navigate`, `mcp:read`, `mcp:write`, `mcp:delete`, `mcp:prompt`. |
 | **HUMAN-5** | Configure Callback & Web Origins | In the Application settings: Add `http://localhost:8000/callback` to callback URLs and localhost to web origins. |
 | **HUMAN-6** | Create and Share `.env` File | Provide `AUTH0_DOMAIN` and `AUTH0_AUDIENCE` in a `.env` file to the AI developer. |
 | **HUMAN-7** | Run MCP Inspector | Use `npx @modelcontextprotocol/inspector` to validate the full OAuth + MCP flow once implementation is complete. |
@@ -49,12 +52,15 @@ Enable a prototype MCP server to support OAuth 2.1 + PKCE via Auth0, serve prope
 
 ## ✅ Deliverables
 
-- ✅ Working FastAPI server with:
-  - `/tool/summary` (protected by bearer token)
-  - `/.well-known/prm.json` (exposes scopes and auth endpoints)
-  - `401` error with `WWW-Authenticate` MCP header
-- ✅ `.env` and README for setup
-- ✅ Passed validation with MCP Inspector
+- ✅ New auth-protected server (`server-auth-protected.js`) with:
+  - Protected `/mcp` endpoint (existing tools behind JWT authentication)
+  - `/.well-known/prm.json` (exposes tool capabilities and required scopes)
+  - `401` error with proper `WWW-Authenticate` MCP header
+  - Scope-based authorization for each existing tool
+- ✅ Preserved current working server (`server-persistent.js` unchanged)
+- ✅ Package.json updated with `start:auth` script
+- ✅ `.env` template and setup documentation
+- ✅ Passed validation with MCP Inspector using protected tools
 
 ---
 
@@ -62,4 +68,8 @@ Enable a prototype MCP server to support OAuth 2.1 + PKCE via Auth0, serve prope
 
 ```env
 AUTH0_DOMAIN=your-tenant.us.auth0.com
-AUTH0_AUDIENCE=https://your-api-id
+AUTH0_AUDIENCE=https://mcp.contextservice.local
+AUTH0_CLIENT_ID=your_m2m_client_id
+AUTH0_CLIENT_SECRET=your_m2m_client_secret
+PORT=3000
+NODE_ENV=development
