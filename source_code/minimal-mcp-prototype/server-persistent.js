@@ -1041,7 +1041,7 @@ function createServerForUser(username) {
           };
 
         case 'explore_project':
-          const userProjectPath = path.join(USERS_DIR, username, 'projects', args.project_id);
+          const exploreProjectPath = path.join(USERS_DIR, username, 'projects', args.project_id);
           
           // Build structure recursively
           async function buildUserStructure(currentPath, relativePath = '') {
@@ -1065,7 +1065,7 @@ function createServerForUser(username) {
             }
           }
           
-          const structure = await buildUserStructure(userProjectPath);
+          const structure = await buildUserStructure(exploreProjectPath);
           return {
             content: [{
               type: 'text',
