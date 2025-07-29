@@ -37,16 +37,16 @@ Build on proven `server-persistent.js` which already has working MCP tools, Clau
 
 ## 🙋 Tasks for the Human (Auth0 Setup)
 
-| Task ID | Title | Description | Status |
-|--------|-------|-------------|---------|
-| **HUMAN-1** | Create Auth0 Account & Tenant | Sign up at [auth0.com](https://auth0.com) and create a tenant. | 🔄 **NEXT** |
-| **HUMAN-2** | Create Auth0 Machine-to-Machine App | Create M2M application for MCP client authentication. Save **Client ID**, **Client Secret**, **Domain**. | ⏳ **PENDING** |
-| **HUMAN-3** | Create Auth0 API for MCP Tools | Create API with identifier like `https://mcp.contextservice.local`. This becomes the JWT audience. | ⏳ **PENDING** |
-| **HUMAN-4** | Define MCP Tool Scopes | Add scopes matching existing tools: `mcp:navigate`, `mcp:read`, `mcp:write`, `mcp:delete`, `mcp:prompt`. | ⏳ **PENDING** |
-| **HUMAN-5** | Configure Callback & Web Origins | In the Application settings: Add `http://localhost:8000/callback` to callback URLs and localhost to web origins. | ⏳ **PENDING** |
-| **HUMAN-6** | Create and Share `.env` File | Provide `AUTH0_DOMAIN` and `AUTH0_AUDIENCE` in a `.env` file to the AI developer. | ⏳ **PENDING** |
-| **HUMAN-7** | Run MCP Inspector | Use `npx @modelcontextprotocol/inspector` to validate the full OAuth + MCP flow once implementation is complete. | ⏳ **PENDING** |
-| **HUMAN-8** | Notify AI Developer | Let the AI know when setup is complete and provide missing Auth0 config for live testing. | ⏳ **PENDING** |
+| Task ID | Title | Description |
+|--------|-------|-------------|
+| **HUMAN-1** | Create Auth0 Account & Tenant | Sign up at [auth0.com](https://auth0.com) and create a tenant. |
+| **HUMAN-2** | Create Auth0 Machine-to-Machine App | Create M2M application for MCP client authentication. Save **Client ID**, **Client Secret**, **Domain**. |
+| **HUMAN-3** | Create Auth0 API for MCP Tools | Create API with identifier like `https://mcp.contextservice.local`. This becomes the JWT audience. |
+| **HUMAN-4** | Define MCP Tool Scopes | Add scopes matching existing tools: `mcp:navigate`, `mcp:read`, `mcp:write`, `mcp:delete`, `mcp:prompt`. |
+| **HUMAN-5** | Configure Callback & Web Origins | In the Application settings: Add `http://localhost:8000/callback` to callback URLs and localhost to web origins. |
+| **HUMAN-6** | Create and Share `.env` File | Provide `AUTH0_DOMAIN` and `AUTH0_AUDIENCE` in a `.env` file to the AI developer. |
+| **HUMAN-7** | Run MCP Inspector | Use `npx @modelcontextprotocol/inspector` to validate the full OAuth + MCP flow once implementation is complete. |
+| **HUMAN-8** | Notify AI Developer | Let the AI know when setup is complete and provide missing Auth0 config for live testing. |
 
 ---
 
