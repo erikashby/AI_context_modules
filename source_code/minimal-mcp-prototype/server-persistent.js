@@ -989,6 +989,58 @@ function createServer() {
             },
             required: ['project_id', 'folder_path']
           }
+        },
+        {
+          name: 'read_multiple_files',
+          description: 'Read multiple files in one request to reduce roundtrips',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              project_id: { 
+                type: 'string', 
+                description: 'Project identifier' 
+              },
+              file_paths: { 
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Array of file paths within project (e.g., ["current-status/priorities.md", "goals-and-vision/annual-goals.md"])' 
+              }
+            },
+            required: ['project_id', 'file_paths']
+          }
+        },
+        {
+          name: 'get_project_overview',
+          description: 'Get comprehensive project overview including structure and key files in one request',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              project_id: { 
+                type: 'string', 
+                description: 'Project identifier' 
+              },
+              include_content: {
+                type: 'boolean',
+                description: 'Include content of key files (README.md, priorities.md, this-week.md) (default: true)',
+                default: true
+              }
+            },
+            required: ['project_id']
+          }
+        },
+        {
+          name: 'get_current_context',
+          description: 'Get current priorities, this week focus, and recent updates in one request',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              project_id: { 
+                type: 'string', 
+                description: 'Project identifier' 
+              }
+            },
+            required: ['project_id']
+          }
         }
       ]
     };
@@ -1267,6 +1319,109 @@ function createServer() {
             };
           } catch (error) {
             throw new Error(`Failed to delete folder: ${error.message}`);
+          };
+
+        case 'read_multiple_files':
+          const filePaths = args.file_paths || [];
+          if (!Array.isArray(filePaths) || filePaths.length === 0) {
+            throw new Error('file_paths must be a non-empty array');
+          }
+          
+          const results = [];
+          for (const filePath of filePaths) {
+            try {
+              const userFilePath = await getUserFilePath(username, args.project_id, filePath);
+              const content = await fs.readFile(userFilePath, 'utf8');
+              results.push({
+                file_path: filePath,
+                success: true,
+                content: content
+              });
+            } catch (error) {
+              results.push({
+                file_path: filePath,
+                success: false,
+                error: error.message
+              });
+            }
+          }
+          
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify({
+                project_id: args.project_id,
+                operation: "read_multiple_files",
+                results: results,
+                storage_type: "persistent_file_system"
+              }, null, 2)
+            }]
+          };
+
+        case 'get_project_overview':
+          const includeContent = args.include_content !== false;
+          
+          // Get project structure
+          const overviewStructure = await getProjectStructure(username, args.project_id);
+          
+          const overview = {
+            project_id: args.project_id,
+            operation: "get_project_overview",
+            structure: overviewStructure,
+            storage_type: "persistent_file_system"
+          };
+          
+          if (includeContent) {
+            const keyFiles = ['README.md', 'current-status/priorities.md', 'current-status/this-week.md'];
+            overview.key_files = {};
+            
+            for (const filePath of keyFiles) {
+              try {
+                const userFilePath = await getUserFilePath(username, args.project_id, filePath);
+                const content = await fs.readFile(userFilePath, 'utf8');
+                overview.key_files[filePath] = content;
+              } catch (error) {
+                overview.key_files[filePath] = `Error: ${error.message}`;
+              }
+            }
+          }
+          
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify(overview, null, 2)
+            }]
+          };
+
+        case 'get_current_context':
+          const contextFiles = [
+            'current-status/priorities.md',
+            'current-status/this-week.md', 
+            'goals-and-vision/annual-goals.md'
+          ];
+          
+          const currentContext = {
+            project_id: args.project_id,
+            operation: "get_current_context",
+            context: {},
+            storage_type: "persistent_file_system"
+          };
+          
+          for (const filePath of contextFiles) {
+            try {
+              const userFilePath = await getUserFilePath(username, args.project_id, filePath);
+              const content = await fs.readFile(userFilePath, 'utf8');
+              currentContext.context[filePath] = content;
+            } catch (error) {
+              currentContext.context[filePath] = `Error: ${error.message}`;
+            }
+          }
+          
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify(currentContext, null, 2)
+            }]
           };
 
         default:
