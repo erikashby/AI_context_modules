@@ -22,6 +22,9 @@ const PORT = process.env.PORT || 3000;
 // File system paths
 const CONTEXT_DATA_DIR = path.join(__dirname, 'context-data');
 const PERSONAL_ORG_DIR = path.join(CONTEXT_DATA_DIR, 'personal-organization');
+// Multi-user paths
+const USERS_DIR = path.join(__dirname, 'users');
+const MODULES_DIR = path.join(__dirname, 'modules');
 
 // Utility functions for file operations
 async function ensureDirectoryExists(dirPath) {
@@ -41,6 +44,23 @@ async function validateProjectId(projectId) {
   }
 }
 
+// Multi-user file path resolution
+async function getUserFilePath(username, projectId, filePath) {
+  // Sanitize file path to prevent directory traversal
+  const sanitizedPath = filePath.replace(/^\/+|\/+$/g, '').replace(/\.\./g, '');
+  const userProjectPath = path.join(USERS_DIR, username, 'projects', projectId);
+  const fullPath = path.join(userProjectPath, sanitizedPath);
+  
+  // Ensure path is within user directory (extend existing security)
+  const userBasePath = path.join(USERS_DIR, username);
+  if (!fullPath.startsWith(userBasePath)) {
+    throw new Error('Access denied: Path must be within user directory');
+  }
+  
+  return fullPath;
+}
+
+// Original function for backward compatibility
 async function getFilePath(projectId, filePath) {
   await validateProjectId(projectId);
   
@@ -648,7 +668,637 @@ async function getProjectStructure() {
   return result;
 }
 
+// User-scoped handler functions
+async function handleListProjects(username) {
+  try {
+    const userProjectsDir = path.join(USERS_DIR, username, 'projects');
+    const projects = await fs.readdir(userProjectsDir);
+    
+    const projectList = projects.map(project => `• ${project}`).join('\n');
+    
+    return {
+      content: [{ 
+        type: 'text', 
+        text: `Projects for ${username}:\n${projectList}` 
+      }]
+    };
+  } catch (error) {
+    return {
+      content: [{ 
+        type: 'text', 
+        text: `Error listing projects for ${username}: ${error.message}` 
+      }],
+      isError: true
+    };
+  }
+}
+
+async function handleCreateProject(username, projectName, moduleId) {
+  try {
+    const modulePath = path.join(MODULES_DIR, moduleId);
+    const userProjectPath = path.join(USERS_DIR, username, 'projects', projectName);
+    
+    // Check if module exists
+    await fs.access(modulePath);
+    
+    // Copy module to user project using our CLI function
+    const { copyDirectoryRecursive } = require('./cli-tool.js');
+    await copyDirectoryRecursive(modulePath, userProjectPath);
+    
+    return {
+      content: [{ 
+        type: 'text', 
+        text: `✅ Project '${projectName}' created for ${username} from module '${moduleId}'` 
+      }]
+    };
+  } catch (error) {
+    return {
+      content: [{ 
+        type: 'text', 
+        text: `Error creating project: ${error.message}` 
+      }],
+      isError: true
+    };
+  }
+}
+
+async function handleReadFile(username, projectId, filePath) {
+  try {
+    const fullPath = await getUserFilePath(username, projectId, filePath);
+    const content = await fs.readFile(fullPath, 'utf8');
+    
+    return {
+      content: [{ 
+        type: 'text', 
+        text: `File: ${filePath}\n\n${content}` 
+      }]
+    };
+  } catch (error) {
+    return {
+      content: [{ 
+        type: 'text', 
+        text: `Error reading file: ${error.message}` 
+      }],
+      isError: true
+    };
+  }
+}
+
 // Function to create fresh server instance for each request
+// Create server instance scoped to specific user
+function createServerForUser(username) {
+  const server = new Server(
+    {
+      name: 'AI Context Service - Multi-User Tech Proof',
+      version: '2.3.1',
+    },
+    {
+      capabilities: {
+        tools: { listChanged: true },
+        resources: { subscribe: true, listChanged: true },
+        prompts: { listChanged: true }
+      },
+    }
+  );
+
+  // Register user-scoped tool handlers
+  server.setRequestHandler(ListToolsRequestSchema, async () => {
+    return {
+      tools: [
+        {
+          name: 'list_projects',
+          description: `Show available context projects for user ${username}`,
+          inputSchema: {
+            type: 'object',
+            properties: {},
+            required: []
+          }
+        },
+        {
+          name: 'create_project',
+          description: 'Create new project from module template',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              project_name: { type: 'string', description: 'Name for the new project' },
+              module_id: { type: 'string', description: 'Module template ID (e.g., personal-effectiveness-v1)' }
+            },
+            required: ['project_name', 'module_id']
+          }
+        },
+        {
+          name: 'read_file',
+          description: 'Read specific context files',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              project_id: { type: 'string', description: 'Project identifier' },
+              file_path: { type: 'string', description: 'File path within project' }
+            },
+            required: ['project_id', 'file_path']
+          }
+        },
+        {
+          name: 'read_multiple_files',
+          description: 'Read multiple files in one request to reduce roundtrips',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              project_id: { type: 'string', description: 'Project identifier' },
+              file_paths: { 
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Array of file paths within project (e.g., ["current-status/priorities.md", "goals-and-vision/annual-goals.md"])' 
+              }
+            },
+            required: ['project_id', 'file_paths']
+          }
+        },
+        {
+          name: 'get_project_overview',
+          description: 'Get comprehensive project overview including structure and key files in one request',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              project_id: { type: 'string', description: 'Project identifier' },
+              include_content: {
+                type: 'boolean',
+                description: 'Include content of key files (README.md, priorities.md, this-week.md) (default: true)',
+                default: true
+              }
+            },
+            required: ['project_id']
+          }
+        },
+        {
+          name: 'get_current_context',
+          description: 'Get current priorities, this week focus, and recent updates in one request',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              project_id: { type: 'string', description: 'Project identifier' }
+            },
+            required: ['project_id']
+          }
+        },
+        {
+          name: 'explore_project',
+          description: 'Get folder structure overview of a specific project',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              project_id: { type: 'string', description: 'Project identifier' }
+            },
+            required: ['project_id']
+          }
+        },
+        {
+          name: 'list_folder_contents',
+          description: 'Show files/folders in a specific project path',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              project_id: { type: 'string', description: 'Project identifier' },
+              folder_path: { type: 'string', description: 'Folder path within project (e.g., current-status)' }
+            },
+            required: ['project_id', 'folder_path']
+          }
+        },
+        {
+          name: 'write_file',
+          description: 'Create or update context files (persistent across server restarts)',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              project_id: { type: 'string', description: 'Project identifier' },
+              file_path: { type: 'string', description: 'File path within project (e.g., current-status/new-priorities.md)' },
+              content: { type: 'string', description: 'File content to write' }
+            },
+            required: ['project_id', 'file_path', 'content']
+          }
+        },
+        {
+          name: 'delete_file',
+          description: 'Delete context files or empty directories',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              project_id: { type: 'string', description: 'Project identifier' },
+              file_path: { type: 'string', description: 'File or directory path within project to delete' }
+            },
+            required: ['project_id', 'file_path']
+          }
+        },
+        {
+          name: 'create_folder',
+          description: 'Create new directories in the project structure',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              project_id: { type: 'string', description: 'Project identifier' },
+              folder_path: { type: 'string', description: 'Folder path to create (e.g., projects/active/new-project)' }
+            },
+            required: ['project_id', 'folder_path']
+          }
+        },
+        {
+          name: 'delete_folder',
+          description: 'Delete directories and their contents (use with caution)',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              project_id: { type: 'string', description: 'Project identifier' },
+              folder_path: { type: 'string', description: 'Folder path to delete' },
+              force: {
+                type: 'boolean',
+                description: 'Force delete non-empty directory (default: false)',
+                default: false
+              }
+            },
+            required: ['project_id', 'folder_path']
+          }
+        }
+      ]
+    };
+  });
+
+  // Handle tool calls with user context
+  server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    const { name, arguments: args } = request.params;
+    
+    try {
+      switch (name) {
+        case 'list_projects':
+          return await handleListProjects(username);
+          
+        case 'create_project':
+          return await handleCreateProject(username, args.project_name, args.module_id);
+          
+        case 'read_file':
+          return await handleReadFile(username, args.project_id, args.file_path);
+          
+        case 'read_multiple_files':
+          const filePaths = args.file_paths || [];
+          if (!Array.isArray(filePaths) || filePaths.length === 0) {
+            throw new Error('file_paths must be a non-empty array');
+          }
+          
+          const results = [];
+          for (const filePath of filePaths) {
+            try {
+              const userFilePath = await getUserFilePath(username, args.project_id, filePath);
+              const content = await fs.readFile(userFilePath, 'utf8');
+              results.push({
+                file_path: filePath,
+                success: true,
+                content: content
+              });
+            } catch (error) {
+              results.push({
+                file_path: filePath,
+                success: false,
+                error: error.message
+              });
+            }
+          }
+          
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify({
+                project_id: args.project_id,
+                operation: "read_multiple_files",
+                results: results,
+                storage_type: "persistent_file_system"
+              }, null, 2)
+            }]
+          };
+
+        case 'get_project_overview':
+          const includeContent = args.include_content !== false;
+          
+          // Get project structure - need to adapt for user-specific path
+          const userProjectPath = path.join(USERS_DIR, username, 'projects', args.project_id);
+          
+          const overview = {
+            project_id: args.project_id,
+            operation: "get_project_overview",
+            structure: "TODO: implement user-specific structure",
+            storage_type: "persistent_file_system"
+          };
+          
+          if (includeContent) {
+            const keyFiles = ['README.md', 'current-status/priorities.md', 'current-status/this-week.md'];
+            overview.key_files = {};
+            
+            for (const filePath of keyFiles) {
+              try {
+                const userFilePath = await getUserFilePath(username, args.project_id, filePath);
+                const content = await fs.readFile(userFilePath, 'utf8');
+                overview.key_files[filePath] = content;
+              } catch (error) {
+                overview.key_files[filePath] = `Error: ${error.message}`;
+              }
+            }
+          }
+          
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify(overview, null, 2)
+            }]
+          };
+
+        case 'get_current_context':
+          const contextFiles = [
+            'current-status/priorities.md',
+            'current-status/this-week.md', 
+            'goals-and-vision/annual-goals.md'
+          ];
+          
+          const currentContext = {
+            project_id: args.project_id,
+            operation: "get_current_context",
+            context: {},
+            storage_type: "persistent_file_system"
+          };
+          
+          for (const filePath of contextFiles) {
+            try {
+              const userFilePath = await getUserFilePath(username, args.project_id, filePath);
+              const content = await fs.readFile(userFilePath, 'utf8');
+              currentContext.context[filePath] = content;
+            } catch (error) {
+              currentContext.context[filePath] = `Error: ${error.message}`;
+            }
+          }
+          
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify(currentContext, null, 2)
+            }]
+          };
+
+        case 'explore_project':
+          const exploreProjectPath = path.join(USERS_DIR, username, 'projects', args.project_id);
+          
+          // Build structure recursively
+          async function buildUserStructure(currentPath, relativePath = '') {
+            try {
+              const items = await fs.readdir(currentPath, { withFileTypes: true });
+              const currentLevel = {};
+              
+              for (const item of items) {
+                if (item.isDirectory()) {
+                  const dirPath = path.join(currentPath, item.name);
+                  const subStructure = await buildUserStructure(dirPath, path.join(relativePath, item.name));
+                  currentLevel[item.name + '/'] = subStructure;
+                } else {
+                  currentLevel[item.name] = 'file';
+                }
+              }
+              
+              return currentLevel;
+            } catch (error) {
+              return {};
+            }
+          }
+          
+          const structure = await buildUserStructure(exploreProjectPath);
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify({
+                project_id: args.project_id,
+                structure: structure,
+                storage_type: "persistent_file_system",
+                capabilities: ["read", "write", "delete"]
+              }, null, 2)
+            }]
+          };
+
+        case 'list_folder_contents':
+          if (!args?.project_id || !args?.folder_path) {
+            throw new Error('project_id and folder_path parameters are required');
+          }
+          
+          const folderPath = args.folder_path.replace(/^\/+|\/+$/g, '');
+          const fullDirPath = await getUserFilePath(username, args.project_id, folderPath);
+          
+          try {
+            const stats = await fs.stat(fullDirPath);
+            if (!stats.isDirectory()) {
+              throw new Error(`Path is not a directory: ${folderPath}`);
+            }
+          } catch (error) {
+            if (error.code === 'ENOENT') {
+              throw new Error(`Directory not found: ${folderPath}`);
+            }
+            throw error;
+          }
+          
+          const items = await fs.readdir(fullDirPath, { withFileTypes: true });
+          const contents = items.map(item => ({
+            name: item.name,
+            type: item.isDirectory() ? 'folder' : 'file',
+            description: item.name === 'README.md' ? 'Folder overview and navigation guide' :
+                        item.name.endsWith('.md') ? 'Context file' : 
+                        item.isDirectory() ? 'Subfolder' : 'File'
+          }));
+          
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify({
+                project_id: args.project_id,
+                folder_path: folderPath,
+                contents: contents,
+                storage_type: "persistent_file_system"
+              }, null, 2)
+            }]
+          };
+
+        case 'write_file':
+          if (!args?.project_id || !args?.file_path || args?.content === undefined) {
+            throw new Error('project_id, file_path, and content parameters are required');
+          }
+          
+          const writeFilePath = await getUserFilePath(username, args.project_id, args.file_path);
+          
+          // Ensure directory exists
+          await ensureDirectoryExists(path.dirname(writeFilePath));
+          
+          // Write file
+          await fs.writeFile(writeFilePath, args.content, 'utf8');
+          
+          const stats = await fs.stat(writeFilePath);
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify({
+                project_id: args.project_id,
+                file_path: args.file_path,
+                operation: "write",
+                success: true,
+                message: "File written successfully",
+                last_updated: stats.mtime.toISOString().split('T')[0],
+                file_size: `${(stats.size / 1024).toFixed(1)}KB`,
+                storage_type: "persistent_file_system"
+              }, null, 2)
+            }]
+          };
+
+        case 'delete_file':
+          if (!args?.project_id || !args?.file_path) {
+            throw new Error('project_id and file_path parameters are required');
+          }
+          
+          const deleteFilePath = await getUserFilePath(username, args.project_id, args.file_path);
+          
+          try {
+            await fs.access(deleteFilePath);
+          } catch (error) {
+            if (error.code === 'ENOENT') {
+              throw new Error(`File or directory not found: ${args.file_path}`);
+            }
+            throw error;
+          }
+          
+          const deleteStats = await fs.stat(deleteFilePath);
+          
+          if (deleteStats.isDirectory()) {
+            const contents = await fs.readdir(deleteFilePath);
+            if (contents.length > 0) {
+              throw new Error('Cannot delete non-empty directory. Delete contents first or use force option.');
+            }
+            await fs.rmdir(deleteFilePath);
+            return {
+              content: [{
+                type: 'text', 
+                text: JSON.stringify({
+                  project_id: args.project_id,
+                  file_path: args.file_path,
+                  operation: "delete",
+                  success: true,
+                  message: "Directory deleted successfully",
+                  type: "directory",
+                  storage_type: "persistent_file_system"
+                }, null, 2)
+              }]
+            };
+          } else {
+            await fs.unlink(deleteFilePath);
+            return {
+              content: [{
+                type: 'text',
+                text: JSON.stringify({
+                  project_id: args.project_id,
+                  file_path: args.file_path,
+                  operation: "delete",
+                  success: true,
+                  message: "File deleted successfully",
+                  type: "file",
+                  storage_type: "persistent_file_system"
+                }, null, 2)
+              }]
+            };
+          }
+
+        case 'create_folder':
+          if (!args?.project_id || !args?.folder_path) {
+            throw new Error('project_id and folder_path parameters are required');
+          }
+          
+          const createFolderPath = await getUserFilePath(username, args.project_id, args.folder_path);
+          
+          try {
+            await fs.access(createFolderPath);
+            throw new Error(`Folder already exists: ${args.folder_path}`);
+          } catch (error) {
+            if (error.code !== 'ENOENT') {
+              throw error;
+            }
+          }
+          
+          await ensureDirectoryExists(createFolderPath);
+          
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify({
+                project_id: args.project_id,
+                folder_path: args.folder_path,
+                operation: "create_folder",
+                success: true,
+                message: "Folder created successfully",
+                storage_type: "persistent_file_system"
+              }, null, 2)
+            }]
+          };
+
+        case 'delete_folder':
+          if (!args?.project_id || !args?.folder_path) {
+            throw new Error('project_id and folder_path parameters are required');
+          }
+          
+          const deleteFolderPath = await getUserFilePath(username, args.project_id, args.folder_path);
+          
+          try {
+            const stats = await fs.stat(deleteFolderPath);
+            if (!stats.isDirectory()) {
+              throw new Error(`Path is not a directory: ${args.folder_path}`);
+            }
+          } catch (error) {
+            if (error.code === 'ENOENT') {
+              throw new Error(`Folder not found: ${args.folder_path}`);
+            }
+            throw error;
+          }
+          
+          const force = args.force || false;
+          if (!force) {
+            const contents = await fs.readdir(deleteFolderPath);
+            if (contents.length > 0) {
+              throw new Error(`Cannot delete non-empty directory: ${args.folder_path}. Use force=true to delete with contents, or delete contents first.`);
+            }
+          }
+          
+          if (force) {
+            await fs.rm(deleteFolderPath, { recursive: true, force: true });
+          } else {
+            await fs.rmdir(deleteFolderPath);
+          }
+          
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify({
+                project_id: args.project_id,
+                folder_path: args.folder_path,
+                operation: "delete_folder",
+                success: true,
+                message: force ? "Folder and contents deleted successfully" : "Empty folder deleted successfully",
+                force: force,
+                storage_type: "persistent_file_system"
+              }, null, 2)
+            }]
+          };
+          
+        default:
+          throw new Error(`Unknown tool: ${name}`);
+      }
+    } catch (error) {
+      return {
+        content: [{ type: 'text', text: `Error: ${error.message}` }],
+        isError: true
+      };
+    }
+  });
+
+  return server;
+}
+
 function createServer() {
   const server = new Server(
     {
@@ -807,6 +1457,58 @@ function createServer() {
             },
             required: ['project_id', 'folder_path']
           }
+        },
+        {
+          name: 'read_multiple_files',
+          description: 'Read multiple files in one request to reduce roundtrips',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              project_id: { 
+                type: 'string', 
+                description: 'Project identifier' 
+              },
+              file_paths: { 
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Array of file paths within project (e.g., ["current-status/priorities.md", "goals-and-vision/annual-goals.md"])' 
+              }
+            },
+            required: ['project_id', 'file_paths']
+          }
+        },
+        {
+          name: 'get_project_overview',
+          description: 'Get comprehensive project overview including structure and key files in one request',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              project_id: { 
+                type: 'string', 
+                description: 'Project identifier' 
+              },
+              include_content: {
+                type: 'boolean',
+                description: 'Include content of key files (README.md, priorities.md, this-week.md) (default: true)',
+                default: true
+              }
+            },
+            required: ['project_id']
+          }
+        },
+        {
+          name: 'get_current_context',
+          description: 'Get current priorities, this week focus, and recent updates in one request',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              project_id: { 
+                type: 'string', 
+                description: 'Project identifier' 
+              }
+            },
+            required: ['project_id']
+          }
         }
       ]
     };
@@ -818,25 +1520,67 @@ function createServer() {
     try {
       switch (name) {
         case 'list_projects':
+          // Get user's actual projects dynamically
+          const userProjectsDir = path.join(USERS_DIR, username, 'projects');
+          let availableProjects = [];
+          
+          try {
+            const projectDirs = await fs.readdir(userProjectsDir);
+            for (const projectId of projectDirs) {
+              const projectPath = path.join(userProjectsDir, projectId);
+              const stats = await fs.stat(projectPath);
+              if (stats.isDirectory()) {
+                // Try to read project README for description
+                let description = "Personal effectiveness and organization project";
+                try {
+                  const readmePath = path.join(projectPath, 'README.md');
+                  const readmeContent = await fs.readFile(readmePath, 'utf8');
+                  // Extract first line after # header as description
+                  const lines = readmeContent.split('\n');
+                  for (const line of lines) {
+                    if (line.trim() && !line.startsWith('#')) {
+                      description = line.trim();
+                      break;
+                    }
+                  }
+                } catch (e) {
+                  // Use default description
+                }
+                
+                availableProjects.push({
+                  id: projectId,
+                  name: projectId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                  description: description,
+                  status: "available",
+                  features: ["read", "write", "delete"]
+                });
+              }
+            }
+          } catch (error) {
+            // Fallback if no projects directory
+            availableProjects = [{
+              id: "no-projects",
+              name: "No Projects Found", 
+              description: "No projects available for this user",
+              status: "empty"
+            }];
+          }
+
           return {
             content: [{
               type: 'text',
               text: JSON.stringify({
-                projects: [
-                  {
-                    id: "personal-organization",
-                    name: "Personal Organization",
-                    description: "Daily planning, projects, and life management (PERSISTENT STORAGE)",
-                    status: "implemented",
-                    features: ["read", "write", "delete"]
-                  },
-                  {
-                    id: "personal-health",
-                    name: "Personal Health",
-                    description: "Fitness, nutrition, and wellness tracking",
-                    status: "not_implemented"
-                  }
-                ]
+                user: username,
+                projects: availableProjects,
+                usage_guide: {
+                  recommended_workflow: [
+                    "1. Use 'get_project_overview' to quickly see project structure + key files",
+                    "2. Use 'get_current_context' for priorities + weekly focus + goals", 
+                    "3. Use 'read_multiple_files' to batch read specific files",
+                    "4. Use individual 'read_file' only for specific files not covered above"
+                  ],
+                  efficiency_tip: "The batch tools (get_project_overview, get_current_context, read_multiple_files) reduce roundtrips and provide comprehensive context faster than individual file reads."
+                }
               }, null, 2)
             }]
           };
@@ -1087,6 +1831,109 @@ function createServer() {
             throw new Error(`Failed to delete folder: ${error.message}`);
           };
 
+        case 'read_multiple_files':
+          const filePaths = args.file_paths || [];
+          if (!Array.isArray(filePaths) || filePaths.length === 0) {
+            throw new Error('file_paths must be a non-empty array');
+          }
+          
+          const results = [];
+          for (const filePath of filePaths) {
+            try {
+              const userFilePath = await getUserFilePath(username, args.project_id, filePath);
+              const content = await fs.readFile(userFilePath, 'utf8');
+              results.push({
+                file_path: filePath,
+                success: true,
+                content: content
+              });
+            } catch (error) {
+              results.push({
+                file_path: filePath,
+                success: false,
+                error: error.message
+              });
+            }
+          }
+          
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify({
+                project_id: args.project_id,
+                operation: "read_multiple_files",
+                results: results,
+                storage_type: "persistent_file_system"
+              }, null, 2)
+            }]
+          };
+
+        case 'get_project_overview':
+          const includeContent = args.include_content !== false;
+          
+          // Get project structure
+          const overviewStructure = await getProjectStructure(username, args.project_id);
+          
+          const overview = {
+            project_id: args.project_id,
+            operation: "get_project_overview",
+            structure: overviewStructure,
+            storage_type: "persistent_file_system"
+          };
+          
+          if (includeContent) {
+            const keyFiles = ['README.md', 'current-status/priorities.md', 'current-status/this-week.md'];
+            overview.key_files = {};
+            
+            for (const filePath of keyFiles) {
+              try {
+                const userFilePath = await getUserFilePath(username, args.project_id, filePath);
+                const content = await fs.readFile(userFilePath, 'utf8');
+                overview.key_files[filePath] = content;
+              } catch (error) {
+                overview.key_files[filePath] = `Error: ${error.message}`;
+              }
+            }
+          }
+          
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify(overview, null, 2)
+            }]
+          };
+
+        case 'get_current_context':
+          const contextFiles = [
+            'current-status/priorities.md',
+            'current-status/this-week.md', 
+            'goals-and-vision/annual-goals.md'
+          ];
+          
+          const currentContext = {
+            project_id: args.project_id,
+            operation: "get_current_context",
+            context: {},
+            storage_type: "persistent_file_system"
+          };
+          
+          for (const filePath of contextFiles) {
+            try {
+              const userFilePath = await getUserFilePath(username, args.project_id, filePath);
+              const content = await fs.readFile(userFilePath, 'utf8');
+              currentContext.context[filePath] = content;
+            } catch (error) {
+              currentContext.context[filePath] = `Error: ${error.message}`;
+            }
+          }
+          
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify(currentContext, null, 2)
+            }]
+          };
+
         default:
           throw new Error(`Unknown tool: ${name}`);
       }
@@ -1207,13 +2054,22 @@ app.get('/', (req, res) => {
 });
 
 // Stateless MCP endpoint - PRESERVE PROVEN ARCHITECTURE
-app.all('/mcp', async (req, res) => {
+// Support both /mcp and /mcp/:username routes
+app.all('/mcp/:username?', async (req, res) => {
   console.log(`${req.method} ${req.url}`);
   console.log('Request body:', req.body);
   
+  // Extract username from URL path first, then headers, then default
+  const username = req.params.username || 
+                   req.headers['mcp-username'] || 
+                   req.headers['x-mcp-username'] || 
+                   'default';
+  
+  console.log(`MCP request for user: ${username}`);
+  
   try {
-    // Create fresh server instance for this request
-    const server = createServer();
+    // Create fresh server instance for this request with user context
+    const server = createServerForUser(username);
     
     // Create stateless transport (sessionIdGenerator: undefined)
     const transport = new StreamableHTTPServerTransport({

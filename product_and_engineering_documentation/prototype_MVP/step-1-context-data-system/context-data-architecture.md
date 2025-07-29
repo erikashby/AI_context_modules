@@ -119,10 +119,55 @@ async function createProjectFromModule(username, projectName, moduleId) {
 ```
 
 ### Module Templates
-**personal-planning-v1 Module** (based on existing personal-organization):
-- **Source**: Current `context-data/personal-organization/` structure
-- **Enhanced**: Adds configuration layer and template processing
-- **Maintains**: Proven folder hierarchy and file organization patterns
+**personal-effectiveness-v1 Module** (based on existing personal-organization):
+
+```
+personal-effectiveness-v1/
+├── module.json
+├── AI_instructions/
+│   ├── README.md
+│   └── project-context.md
+├── current-status/
+│   ├── priorities.md
+│   ├── energy-patterns.md
+│   ├── this-week.md
+│   └── blockers.md
+├── effectiveness-patterns/
+│   ├── productive-times.md
+│   ├── meeting-preferences.md
+│   ├── deep-work-blocks.md
+│   └── decision-patterns.md
+├── goals-and-vision/
+│   ├── annual-goals.md
+│   ├── quarterly-focus.md
+│   └── life-vision.md
+├── planning/
+│   ├── README.md
+│   └── 2025/
+│       └── 07-july/
+│           ├── month_plan.md
+│           └── week-5/
+│               ├── week_plan.md
+│               └── day_29.md
+├── projects/
+│   ├── active/
+│   │   └── README.md
+│   ├── planning/
+│   │   └── README.md
+│   └── completed/
+│       └── README.md
+└── insights/
+    ├── what-works.md
+    ├── lessons-learned.md
+    └── experiments.md
+```
+
+**Key Features:**
+- **Source**: Current `context-data/personal-organization/` structure enhanced for effectiveness intelligence
+- **AI_instructions/**: Project-specific AI guidance and behavior rules
+- **Hierarchical planning**: `planning/year/month/week` structure with sample 2025/07-july/week-5
+- **Effectiveness focus**: Patterns, insights, and optimization data for AI recommendations
+- **Self-documenting**: README.md files explain structure and navigation patterns
 
 ## Performance Considerations
 
