@@ -1052,25 +1052,67 @@ function createServer() {
     try {
       switch (name) {
         case 'list_projects':
+          // Get user's actual projects dynamically
+          const userProjectsDir = path.join(USERS_DIR, username, 'projects');
+          let availableProjects = [];
+          
+          try {
+            const projectDirs = await fs.readdir(userProjectsDir);
+            for (const projectId of projectDirs) {
+              const projectPath = path.join(userProjectsDir, projectId);
+              const stats = await fs.stat(projectPath);
+              if (stats.isDirectory()) {
+                // Try to read project README for description
+                let description = "Personal effectiveness and organization project";
+                try {
+                  const readmePath = path.join(projectPath, 'README.md');
+                  const readmeContent = await fs.readFile(readmePath, 'utf8');
+                  // Extract first line after # header as description
+                  const lines = readmeContent.split('\n');
+                  for (const line of lines) {
+                    if (line.trim() && !line.startsWith('#')) {
+                      description = line.trim();
+                      break;
+                    }
+                  }
+                } catch (e) {
+                  // Use default description
+                }
+                
+                availableProjects.push({
+                  id: projectId,
+                  name: projectId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                  description: description,
+                  status: "available",
+                  features: ["read", "write", "delete"]
+                });
+              }
+            }
+          } catch (error) {
+            // Fallback if no projects directory
+            availableProjects = [{
+              id: "no-projects",
+              name: "No Projects Found", 
+              description: "No projects available for this user",
+              status: "empty"
+            }];
+          }
+
           return {
             content: [{
               type: 'text',
               text: JSON.stringify({
-                projects: [
-                  {
-                    id: "personal-organization",
-                    name: "Personal Organization",
-                    description: "Daily planning, projects, and life management (PERSISTENT STORAGE)",
-                    status: "implemented",
-                    features: ["read", "write", "delete"]
-                  },
-                  {
-                    id: "personal-health",
-                    name: "Personal Health",
-                    description: "Fitness, nutrition, and wellness tracking",
-                    status: "not_implemented"
-                  }
-                ]
+                user: username,
+                projects: availableProjects,
+                usage_guide: {
+                  recommended_workflow: [
+                    "1. Use 'get_project_overview' to quickly see project structure + key files",
+                    "2. Use 'get_current_context' for priorities + weekly focus + goals", 
+                    "3. Use 'read_multiple_files' to batch read specific files",
+                    "4. Use individual 'read_file' only for specific files not covered above"
+                  ],
+                  efficiency_tip: "The batch tools (get_project_overview, get_current_context, read_multiple_files) reduce roundtrips and provide comprehensive context faster than individual file reads."
+                }
               }, null, 2)
             }]
           };
