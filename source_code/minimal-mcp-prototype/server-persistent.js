@@ -1389,12 +1389,14 @@ app.get('/', (req, res) => {
 });
 
 // Stateless MCP endpoint - PRESERVE PROVEN ARCHITECTURE
-app.all('/mcp', async (req, res) => {
+// Support both /mcp and /mcp/:username routes
+app.all('/mcp/:username?', async (req, res) => {
   console.log(`${req.method} ${req.url}`);
   console.log('Request body:', req.body);
   
-  // Extract username from MCP client headers
-  const username = req.headers['mcp-username'] || 
+  // Extract username from URL path first, then headers, then default
+  const username = req.params.username || 
+                   req.headers['mcp-username'] || 
                    req.headers['x-mcp-username'] || 
                    'default';
   
