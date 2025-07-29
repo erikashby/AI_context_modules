@@ -22,6 +22,9 @@ const PORT = process.env.PORT || 3000;
 // File system paths
 const CONTEXT_DATA_DIR = path.join(__dirname, 'context-data');
 const PERSONAL_ORG_DIR = path.join(CONTEXT_DATA_DIR, 'personal-organization');
+// Multi-user paths
+const USERS_DIR = path.join(__dirname, 'users');
+const MODULES_DIR = path.join(__dirname, 'modules');
 
 // Utility functions for file operations
 async function ensureDirectoryExists(dirPath) {
@@ -41,6 +44,23 @@ async function validateProjectId(projectId) {
   }
 }
 
+// Multi-user file path resolution
+async function getUserFilePath(username, projectId, filePath) {
+  // Sanitize file path to prevent directory traversal
+  const sanitizedPath = filePath.replace(/^\/+|\/+$/g, '').replace(/\.\./g, '');
+  const userProjectPath = path.join(USERS_DIR, username, 'projects', projectId);
+  const fullPath = path.join(userProjectPath, sanitizedPath);
+  
+  // Ensure path is within user directory (extend existing security)
+  const userBasePath = path.join(USERS_DIR, username);
+  if (!fullPath.startsWith(userBasePath)) {
+    throw new Error('Access denied: Path must be within user directory');
+  }
+  
+  return fullPath;
+}
+
+// Original function for backward compatibility
 async function getFilePath(projectId, filePath) {
   await validateProjectId(projectId);
   
@@ -648,7 +668,169 @@ async function getProjectStructure() {
   return result;
 }
 
+// User-scoped handler functions
+async function handleListProjects(username) {
+  try {
+    const userProjectsDir = path.join(USERS_DIR, username, 'projects');
+    const projects = await fs.readdir(userProjectsDir);
+    
+    const projectList = projects.map(project => `• ${project}`).join('\n');
+    
+    return {
+      content: [{ 
+        type: 'text', 
+        text: `Projects for ${username}:\n${projectList}` 
+      }]
+    };
+  } catch (error) {
+    return {
+      content: [{ 
+        type: 'text', 
+        text: `Error listing projects for ${username}: ${error.message}` 
+      }],
+      isError: true
+    };
+  }
+}
+
+async function handleCreateProject(username, projectName, moduleId) {
+  try {
+    const modulePath = path.join(MODULES_DIR, moduleId);
+    const userProjectPath = path.join(USERS_DIR, username, 'projects', projectName);
+    
+    // Check if module exists
+    await fs.access(modulePath);
+    
+    // Copy module to user project using our CLI function
+    const { copyDirectoryRecursive } = require('./cli-tool.js');
+    await copyDirectoryRecursive(modulePath, userProjectPath);
+    
+    return {
+      content: [{ 
+        type: 'text', 
+        text: `✅ Project '${projectName}' created for ${username} from module '${moduleId}'` 
+      }]
+    };
+  } catch (error) {
+    return {
+      content: [{ 
+        type: 'text', 
+        text: `Error creating project: ${error.message}` 
+      }],
+      isError: true
+    };
+  }
+}
+
+async function handleReadFile(username, projectId, filePath) {
+  try {
+    const fullPath = await getUserFilePath(username, projectId, filePath);
+    const content = await fs.readFile(fullPath, 'utf8');
+    
+    return {
+      content: [{ 
+        type: 'text', 
+        text: `File: ${filePath}\n\n${content}` 
+      }]
+    };
+  } catch (error) {
+    return {
+      content: [{ 
+        type: 'text', 
+        text: `Error reading file: ${error.message}` 
+      }],
+      isError: true
+    };
+  }
+}
+
 // Function to create fresh server instance for each request
+// Create server instance scoped to specific user
+function createServerForUser(username) {
+  const server = new Server(
+    {
+      name: 'AI Context Service - Multi-User Tech Proof',
+      version: '2.3.1',
+    },
+    {
+      capabilities: {
+        tools: { listChanged: true },
+        resources: { subscribe: true, listChanged: true },
+        prompts: { listChanged: true }
+      },
+    }
+  );
+
+  // Register user-scoped tool handlers
+  server.setRequestHandler(ListToolsRequestSchema, async () => {
+    return {
+      tools: [
+        {
+          name: 'list_projects',
+          description: `Show available context projects for user ${username}`,
+          inputSchema: {
+            type: 'object',
+            properties: {},
+            required: []
+          }
+        },
+        {
+          name: 'create_project',
+          description: 'Create new project from module template',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              project_name: { type: 'string', description: 'Name for the new project' },
+              module_id: { type: 'string', description: 'Module template ID (e.g., personal-effectiveness-v1)' }
+            },
+            required: ['project_name', 'module_id']
+          }
+        },
+        {
+          name: 'read_file',
+          description: 'Read specific context files',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              project_id: { type: 'string', description: 'Project identifier' },
+              file_path: { type: 'string', description: 'File path within project' }
+            },
+            required: ['project_id', 'file_path']
+          }
+        }
+      ]
+    };
+  });
+
+  // Handle tool calls with user context
+  server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    const { name, arguments: args } = request.params;
+    
+    try {
+      switch (name) {
+        case 'list_projects':
+          return await handleListProjects(username);
+          
+        case 'create_project':
+          return await handleCreateProject(username, args.project_name, args.module_id);
+          
+        case 'read_file':
+          return await handleReadFile(username, args.project_id, args.file_path);
+          
+        default:
+          throw new Error(`Unknown tool: ${name}`);
+      }
+    } catch (error) {
+      return {
+        content: [{ type: 'text', text: `Error: ${error.message}` }],
+        isError: true
+      };
+    }
+  });
+
+  return server;
+}
+
 function createServer() {
   const server = new Server(
     {
@@ -1211,9 +1393,16 @@ app.all('/mcp', async (req, res) => {
   console.log(`${req.method} ${req.url}`);
   console.log('Request body:', req.body);
   
+  // Extract username from MCP client headers
+  const username = req.headers['mcp-username'] || 
+                   req.headers['x-mcp-username'] || 
+                   'default';
+  
+  console.log(`MCP request for user: ${username}`);
+  
   try {
-    // Create fresh server instance for this request
-    const server = createServer();
+    // Create fresh server instance for this request with user context
+    const server = createServerForUser(username);
     
     // Create stateless transport (sessionIdGenerator: undefined)
     const transport = new StreamableHTTPServerTransport({

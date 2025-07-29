@@ -110,26 +110,30 @@ function createServerForUser(username) {
 ### Phase 2: Module Template Engine (2 hours)
 
 #### Task 2.1: Create Base Module Structure (45 minutes)
-**Objective:** Convert existing `personal-organization/` into `personal-planning-v1` module
+**Objective:** Convert existing `personal-organization/` into `personal-effectiveness-v1` module
 
 **Actions:**
-1. Create `/modules/personal-planning-v1/` directory
+1. Create `/modules/personal-effectiveness-v1/` directory
 2. Copy existing `context-data/personal-organization/` structure to module
-3. Add basic `module.json` configuration:
+3. Enhance with effectiveness-focused folders and AI_instructions
+4. Add basic `module.json` configuration:
 
 ```json
 {
   "module": {
-    "id": "personal-planning-v1",
-    "name": "Personal Planning",
+    "id": "personal-effectiveness-v1",
+    "name": "Personal Effectiveness Intelligence",
     "version": "1.0.0",
-    "description": "Personal task management and goal tracking"
+    "description": "Personal effectiveness optimization and intelligence"
   },
   "structure": {
-    "current-status": "Immediate priorities and weekly focus",
-    "goals-and-vision": "Long-term objectives and vision", 
-    "planning": "Time-based planning notes",
-    "projects": "Project lifecycle management"
+    "AI_instructions": "Project-specific AI guidance and behavior rules",
+    "current-status": "Immediate effectiveness state and priorities",
+    "effectiveness-patterns": "Personal optimization insights",
+    "goals-and-vision": "Effectiveness-driven objectives",
+    "planning": "Hierarchical time-based planning (year/month/week)",
+    "projects": "Effectiveness-driven project management",
+    "insights": "Effectiveness intelligence data"
   }
 }
 ```
@@ -164,6 +168,20 @@ async function createProjectFromModule(username, projectName, moduleId) {
   
   console.log(`Created project '${projectName}' for user '${username}' from module '${moduleId}'`);
   return userProjectPath;
+}
+
+// Add MCP tool for project creation
+{
+  name: "create_project",
+  description: "Create new project from module template",
+  inputSchema: {
+    type: "object",
+    properties: {
+      project_name: { type: "string", description: "Name for the new project" },
+      module_id: { type: "string", description: "Module template ID (e.g., 'personal-effectiveness-v1')" }
+    },
+    required: ["project_name", "module_id"]
+  }
 }
 ```
 
@@ -232,8 +250,8 @@ node cli-tool.js create-user alice
 node cli-tool.js create-user bob
 
 # Test project creation  
-node cli-tool.js create-project alice my-planning personal-planning-v1
-node cli-tool.js create-project bob work-stuff personal-planning-v1
+node cli-tool.js create-project alice my-effectiveness personal-effectiveness-v1
+node cli-tool.js create-project bob work-stuff personal-effectiveness-v1
 
 # Verify structure
 node cli-tool.js validate-structure alice
@@ -291,14 +309,22 @@ node cli-tool.js validate-structure alice
 ### File Structure Changes
 ```
 minimal-mcp-prototype/
-├── modules/                    # NEW
-│   └── personal-planning-v1/   # Copied from existing structure
-├── users/                      # NEW  
+├── modules/                        # NEW
+│   └── personal-effectiveness-v1/  # Enhanced effectiveness template
+│       ├── module.json
+│       ├── AI_instructions/
+│       ├── current-status/
+│       ├── effectiveness-patterns/
+│       ├── goals-and-vision/
+│       ├── planning/
+│       ├── projects/
+│       └── insights/
+├── users/                          # NEW  
 │   ├── alice/
 │   └── bob/
-├── cli-tool.js                 # NEW
-├── server-persistent.js        # MODIFIED
-└── context-data/               # UNCHANGED (for reference)
+├── cli-tool.js                     # NEW
+├── server-persistent.js            # MODIFIED
+└── context-data/                   # UNCHANGED (for reference)
     └── personal-organization/
 ```
 
@@ -306,7 +332,7 @@ minimal-mcp-prototype/
 
 ### Primary Deliverables
 1. **Enhanced MCP Server** - `server-persistent.js` with multi-user support
-2. **Module Template** - `personal-planning-v1` module ready for replication  
+2. **Module Template** - `personal-effectiveness-v1` module ready for replication  
 3. **CLI Management Tool** - `cli-tool.js` for user/project operations
 4. **Test Users** - Alice and Bob with sample projects
 
@@ -320,7 +346,7 @@ minimal-mcp-prototype/
 ### Technical Validation
 - [ ] Multiple users can be created via CLI
 - [ ] Projects instantiate correctly from module templates
-- [ ] MCP tools accept username parameters and scope operations correctly
+- [ ] MCP tools automatically scope operations to correct user (no parameter changes)
 - [ ] User data isolation prevents cross-user access
 - [ ] Claude Desktop integration continues working with enhanced server
 
@@ -345,7 +371,7 @@ minimal-mcp-prototype/
 4. **Test incrementally** - validate each phase before proceeding
 
 ### Key Integration Points
-- **MCP tools** - Parameter addition without logic changes
+- **MCP tools** - No parameter changes needed, username from MCP config
 - **File operations** - Path resolution enhancement using existing security patterns
 - **Module system** - Standard recursive directory copying
 - **CLI tools** - New utility leveraging existing file system operations

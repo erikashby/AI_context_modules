@@ -1,0 +1,27 @@
+{
+  "module": {
+    "id": "personal-effectiveness-v1",
+    "name": "Personal Effectiveness Intelligence",
+    "version": "1.0.0",
+    "description": "Personal effectiveness optimization and intelligence",
+    "created": "2025-07-29",
+    "updated": "2025-07-29"
+  },
+  "structure": {
+    "AI_instructions": "Project-specific AI guidance and behavior rules",
+    "current-status": "Immediate effectiveness state and priorities",
+    "effectiveness-patterns": "Personal optimization insights",
+    "goals-and-vision": "Effectiveness-driven objectives",
+    "planning": "Hierarchical time-based planning (year/month/week)",
+    "projects": "Effectiveness-driven project management",
+    "insights": "Effectiveness intelligence data"
+  },
+  "features": [
+    "Intelligent daily planning",
+    "Dynamic time optimization", 
+    "Overwhelm management",
+    "Context-aware weekly planning",
+    "Personal effectiveness patterns",
+    "AI-optimized context structure"
+  ]
+}
