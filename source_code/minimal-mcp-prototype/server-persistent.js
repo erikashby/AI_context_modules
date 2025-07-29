@@ -840,6 +840,83 @@ function createServerForUser(username) {
             },
             required: ['project_id']
           }
+        },
+        {
+          name: 'explore_project',
+          description: 'Get folder structure overview of a specific project',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              project_id: { type: 'string', description: 'Project identifier' }
+            },
+            required: ['project_id']
+          }
+        },
+        {
+          name: 'list_folder_contents',
+          description: 'Show files/folders in a specific project path',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              project_id: { type: 'string', description: 'Project identifier' },
+              folder_path: { type: 'string', description: 'Folder path within project (e.g., current-status)' }
+            },
+            required: ['project_id', 'folder_path']
+          }
+        },
+        {
+          name: 'write_file',
+          description: 'Create or update context files (persistent across server restarts)',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              project_id: { type: 'string', description: 'Project identifier' },
+              file_path: { type: 'string', description: 'File path within project (e.g., current-status/new-priorities.md)' },
+              content: { type: 'string', description: 'File content to write' }
+            },
+            required: ['project_id', 'file_path', 'content']
+          }
+        },
+        {
+          name: 'delete_file',
+          description: 'Delete context files or empty directories',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              project_id: { type: 'string', description: 'Project identifier' },
+              file_path: { type: 'string', description: 'File or directory path within project to delete' }
+            },
+            required: ['project_id', 'file_path']
+          }
+        },
+        {
+          name: 'create_folder',
+          description: 'Create new directories in the project structure',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              project_id: { type: 'string', description: 'Project identifier' },
+              folder_path: { type: 'string', description: 'Folder path to create (e.g., projects/active/new-project)' }
+            },
+            required: ['project_id', 'folder_path']
+          }
+        },
+        {
+          name: 'delete_folder',
+          description: 'Delete directories and their contents (use with caution)',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              project_id: { type: 'string', description: 'Project identifier' },
+              folder_path: { type: 'string', description: 'Folder path to delete' },
+              force: {
+                type: 'boolean',
+                description: 'Force delete non-empty directory (default: false)',
+                default: false
+              }
+            },
+            required: ['project_id', 'folder_path']
+          }
         }
       ]
     };
@@ -960,6 +1037,251 @@ function createServerForUser(username) {
             content: [{
               type: 'text',
               text: JSON.stringify(currentContext, null, 2)
+            }]
+          };
+
+        case 'explore_project':
+          const userProjectPath = path.join(USERS_DIR, username, 'projects', args.project_id);
+          
+          // Build structure recursively
+          async function buildUserStructure(currentPath, relativePath = '') {
+            try {
+              const items = await fs.readdir(currentPath, { withFileTypes: true });
+              const currentLevel = {};
+              
+              for (const item of items) {
+                if (item.isDirectory()) {
+                  const dirPath = path.join(currentPath, item.name);
+                  const subStructure = await buildUserStructure(dirPath, path.join(relativePath, item.name));
+                  currentLevel[item.name + '/'] = subStructure;
+                } else {
+                  currentLevel[item.name] = 'file';
+                }
+              }
+              
+              return currentLevel;
+            } catch (error) {
+              return {};
+            }
+          }
+          
+          const structure = await buildUserStructure(userProjectPath);
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify({
+                project_id: args.project_id,
+                structure: structure,
+                storage_type: "persistent_file_system",
+                capabilities: ["read", "write", "delete"]
+              }, null, 2)
+            }]
+          };
+
+        case 'list_folder_contents':
+          if (!args?.project_id || !args?.folder_path) {
+            throw new Error('project_id and folder_path parameters are required');
+          }
+          
+          const folderPath = args.folder_path.replace(/^\/+|\/+$/g, '');
+          const fullDirPath = await getUserFilePath(username, args.project_id, folderPath);
+          
+          try {
+            const stats = await fs.stat(fullDirPath);
+            if (!stats.isDirectory()) {
+              throw new Error(`Path is not a directory: ${folderPath}`);
+            }
+          } catch (error) {
+            if (error.code === 'ENOENT') {
+              throw new Error(`Directory not found: ${folderPath}`);
+            }
+            throw error;
+          }
+          
+          const items = await fs.readdir(fullDirPath, { withFileTypes: true });
+          const contents = items.map(item => ({
+            name: item.name,
+            type: item.isDirectory() ? 'folder' : 'file',
+            description: item.name === 'README.md' ? 'Folder overview and navigation guide' :
+                        item.name.endsWith('.md') ? 'Context file' : 
+                        item.isDirectory() ? 'Subfolder' : 'File'
+          }));
+          
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify({
+                project_id: args.project_id,
+                folder_path: folderPath,
+                contents: contents,
+                storage_type: "persistent_file_system"
+              }, null, 2)
+            }]
+          };
+
+        case 'write_file':
+          if (!args?.project_id || !args?.file_path || args?.content === undefined) {
+            throw new Error('project_id, file_path, and content parameters are required');
+          }
+          
+          const writeFilePath = await getUserFilePath(username, args.project_id, args.file_path);
+          
+          // Ensure directory exists
+          await ensureDirectoryExists(path.dirname(writeFilePath));
+          
+          // Write file
+          await fs.writeFile(writeFilePath, args.content, 'utf8');
+          
+          const stats = await fs.stat(writeFilePath);
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify({
+                project_id: args.project_id,
+                file_path: args.file_path,
+                operation: "write",
+                success: true,
+                message: "File written successfully",
+                last_updated: stats.mtime.toISOString().split('T')[0],
+                file_size: `${(stats.size / 1024).toFixed(1)}KB`,
+                storage_type: "persistent_file_system"
+              }, null, 2)
+            }]
+          };
+
+        case 'delete_file':
+          if (!args?.project_id || !args?.file_path) {
+            throw new Error('project_id and file_path parameters are required');
+          }
+          
+          const deleteFilePath = await getUserFilePath(username, args.project_id, args.file_path);
+          
+          try {
+            await fs.access(deleteFilePath);
+          } catch (error) {
+            if (error.code === 'ENOENT') {
+              throw new Error(`File or directory not found: ${args.file_path}`);
+            }
+            throw error;
+          }
+          
+          const deleteStats = await fs.stat(deleteFilePath);
+          
+          if (deleteStats.isDirectory()) {
+            const contents = await fs.readdir(deleteFilePath);
+            if (contents.length > 0) {
+              throw new Error('Cannot delete non-empty directory. Delete contents first or use force option.');
+            }
+            await fs.rmdir(deleteFilePath);
+            return {
+              content: [{
+                type: 'text', 
+                text: JSON.stringify({
+                  project_id: args.project_id,
+                  file_path: args.file_path,
+                  operation: "delete",
+                  success: true,
+                  message: "Directory deleted successfully",
+                  type: "directory",
+                  storage_type: "persistent_file_system"
+                }, null, 2)
+              }]
+            };
+          } else {
+            await fs.unlink(deleteFilePath);
+            return {
+              content: [{
+                type: 'text',
+                text: JSON.stringify({
+                  project_id: args.project_id,
+                  file_path: args.file_path,
+                  operation: "delete",
+                  success: true,
+                  message: "File deleted successfully",
+                  type: "file",
+                  storage_type: "persistent_file_system"
+                }, null, 2)
+              }]
+            };
+          }
+
+        case 'create_folder':
+          if (!args?.project_id || !args?.folder_path) {
+            throw new Error('project_id and folder_path parameters are required');
+          }
+          
+          const createFolderPath = await getUserFilePath(username, args.project_id, args.folder_path);
+          
+          try {
+            await fs.access(createFolderPath);
+            throw new Error(`Folder already exists: ${args.folder_path}`);
+          } catch (error) {
+            if (error.code !== 'ENOENT') {
+              throw error;
+            }
+          }
+          
+          await ensureDirectoryExists(createFolderPath);
+          
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify({
+                project_id: args.project_id,
+                folder_path: args.folder_path,
+                operation: "create_folder",
+                success: true,
+                message: "Folder created successfully",
+                storage_type: "persistent_file_system"
+              }, null, 2)
+            }]
+          };
+
+        case 'delete_folder':
+          if (!args?.project_id || !args?.folder_path) {
+            throw new Error('project_id and folder_path parameters are required');
+          }
+          
+          const deleteFolderPath = await getUserFilePath(username, args.project_id, args.folder_path);
+          
+          try {
+            const stats = await fs.stat(deleteFolderPath);
+            if (!stats.isDirectory()) {
+              throw new Error(`Path is not a directory: ${args.folder_path}`);
+            }
+          } catch (error) {
+            if (error.code === 'ENOENT') {
+              throw new Error(`Folder not found: ${args.folder_path}`);
+            }
+            throw error;
+          }
+          
+          const force = args.force || false;
+          if (!force) {
+            const contents = await fs.readdir(deleteFolderPath);
+            if (contents.length > 0) {
+              throw new Error(`Cannot delete non-empty directory: ${args.folder_path}. Use force=true to delete with contents, or delete contents first.`);
+            }
+          }
+          
+          if (force) {
+            await fs.rm(deleteFolderPath, { recursive: true, force: true });
+          } else {
+            await fs.rmdir(deleteFolderPath);
+          }
+          
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify({
+                project_id: args.project_id,
+                folder_path: args.folder_path,
+                operation: "delete_folder",
+                success: true,
+                message: force ? "Folder and contents deleted successfully" : "Empty folder deleted successfully",
+                force: force,
+                storage_type: "persistent_file_system"
+              }, null, 2)
             }]
           };
           
