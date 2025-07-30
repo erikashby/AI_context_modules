@@ -2463,7 +2463,7 @@ async function startServer() {
     
     // Start server
     const httpServer = app.listen(PORT, '0.0.0.0', () => {
-      console.log(`AI Context Service Persistent Tech Proof running on port ${PORT}`);
+      console.log(`AI Context Service Persistent Tech Proof running on port ${PORT} - Testing persistence`);
       console.log(`Health check: http://localhost:${PORT}/health`);
       console.log(`MCP endpoint: http://localhost:${PORT}/mcp`);
       console.log(`Storage: Persistent file system at ${CONTEXT_DATA_DIR}`);
