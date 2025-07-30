@@ -1,10 +1,23 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= title || 'AI Context Service' %></title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="/css/app.css" rel="stylesheet">
+    <style>
+        /* Ensure dark theme loads immediately */
+        body {
+            background-color: #111827 !important;
+            color: white !important;
+            margin: 0;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        .hero-gradient {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+        }
+    </style>
     <script>
         tailwind.config = {
             theme: {
@@ -21,9 +34,8 @@
             }
         }
     </script>
-    <link href="/css/app.css" rel="stylesheet">
 </head>
-<body class="h-full bg-gray-900 text-white">
+<body style="background-color: #111827; color: white; min-height: 100vh;">
     <main>
         <%- body %>
     </main>
