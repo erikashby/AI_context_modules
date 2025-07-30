@@ -2275,6 +2275,102 @@ app.post('/signup', async (req, res) => {
   }
 });
 
+// Login Routes
+app.get('/login', (req, res) => {
+  res.render('login', { 
+    title: 'Sign In - AI Context Service',
+    user: req.session.user || null
+  });
+});
+
+app.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+  
+  try {
+    // Basic validation
+    if (!username || !password) {
+      return res.render('login', {
+        title: 'Sign In - AI Context Service',
+        error: 'Username and password are required',
+        formData: req.body
+      });
+    }
+    
+    // Get user profile
+    const userProfile = await getUserProfile(username);
+    if (!userProfile) {
+      return res.render('login', {
+        title: 'Sign In - AI Context Service',
+        error: 'Invalid username or password',
+        formData: { username } // Preserve username but clear password
+      });
+    }
+    
+    // Check password
+    const isPasswordValid = await bcrypt.compare(password, userProfile.passwordHash);
+    if (!isPasswordValid) {
+      return res.render('login', {
+        title: 'Sign In - AI Context Service',
+        error: 'Invalid username or password',
+        formData: { username } // Preserve username but clear password
+      });
+    }
+    
+    // Update last login
+    userProfile.lastLogin = new Date().toISOString();
+    const profilePath = path.join(USERS_DIR, username, 'profile', 'user.json');
+    await fs.writeFile(profilePath, JSON.stringify(userProfile, null, 2), 'utf8');
+    
+    // Create session
+    req.session.user = {
+      username: userProfile.username,
+      fullName: userProfile.fullName,
+      email: userProfile.email,
+      created: userProfile.created,
+      lastLogin: userProfile.lastLogin,
+      projects: userProfile.projects
+    };
+    
+    console.log(`User logged in: ${username}`);
+    
+    // Redirect to dashboard
+    res.redirect('/dashboard');
+    
+  } catch (error) {
+    console.error('Login error:', error);
+    res.render('login', {
+      title: 'Sign In - AI Context Service',
+      error: 'An error occurred while signing in. Please try again.',
+      formData: req.body
+    });
+  }
+});
+
+// Dashboard Route
+app.get('/dashboard', (req, res) => {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
+  
+  res.render('dashboard', {
+    title: 'Dashboard - AI Context Service',
+    user: req.session.user
+  });
+});
+
+// Logout Route
+app.get('/logout', (req, res) => {
+  const username = req.session.user?.username;
+  req.session.destroy((err) => {
+    if (err) {
+      console.error('Logout error:', err);
+    } else {
+      console.log(`User logged out: ${username}`);
+    }
+    res.redirect('/');
+  });
+});
+
 // Debug endpoint to check if user exists
 app.get('/debug/user/:username', async (req, res) => {
   try {
