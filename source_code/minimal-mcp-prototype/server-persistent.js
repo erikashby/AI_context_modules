@@ -6,6 +6,9 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs').promises;
 const path = require('path');
+const session = require('express-session');
+const bcrypt = require('bcrypt');
+const ejs = require('ejs');
 const { Server } = require('@modelcontextprotocol/sdk/server/index.js');
 const { StreamableHTTPServerTransport } = require('@modelcontextprotocol/sdk/server/streamableHttp.js');
 const { 
@@ -2025,6 +2028,24 @@ function createServer() {
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Web interface configuration
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Session configuration
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'ai-context-service-dev-secret-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
 
 // Health check
 app.get('/health', (req, res) => {
@@ -2038,15 +2059,26 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Root endpoint
+// Web Routes
+
+// Root endpoint - Home page
 app.get('/', (req, res) => {
+  res.render('home', { 
+    title: 'AI Context Service - Personal Effectiveness Intelligence',
+    user: req.session.user || null
+  });
+});
+
+// API info endpoint (moved to /api for JSON responses)
+app.get('/api', (req, res) => {
   res.json({
     service: 'AI Context Service - Persistent Tech Proof',
     version: '2.3.0',
     transport: 'StreamableHTTP-Stateless',
     endpoints: {
       health: '/health',
-      mcp: '/mcp'
+      mcp: '/mcp',
+      web: '/'
     },
     tools: ['list_projects', 'explore_project', 'list_folder_contents', 'read_file', 'write_file', 'delete_file', 'create_folder', 'delete_folder'],
     storage: 'persistent_file_system'
