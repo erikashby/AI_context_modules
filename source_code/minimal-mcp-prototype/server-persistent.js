@@ -33,8 +33,21 @@ const MODULES_DIR = path.join(__dirname, 'modules');
 async function ensureDirectoryExists(dirPath) {
   try {
     await fs.access(dirPath);
-  } catch {
-    await fs.mkdir(dirPath, { recursive: true });
+    console.log(`Directory already exists: ${dirPath}`);
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      console.log(`Creating directory: ${dirPath}`);
+      try {
+        await fs.mkdir(dirPath, { recursive: true });
+        console.log(`Successfully created directory: ${dirPath}`);
+      } catch (mkdirError) {
+        console.error(`Failed to create directory ${dirPath}:`, mkdirError);
+        throw new Error(`Cannot create directory ${dirPath}: ${mkdirError.message}`);
+      }
+    } else {
+      console.error(`Error accessing directory ${dirPath}:`, error);
+      throw new Error(`Cannot access directory ${dirPath}: ${error.message}`);
+    }
   }
 }
 
@@ -85,6 +98,8 @@ async function initializeFileSystem() {
   // Ensure base directories exist
   await ensureDirectoryExists(CONTEXT_DATA_DIR);
   await ensureDirectoryExists(PERSONAL_ORG_DIR);
+  await ensureDirectoryExists(USERS_DIR);
+  console.log(`Users directory initialized at: ${USERS_DIR}`);
   
   // Create comprehensive structure (additive - preserves existing files)
   console.log('Ensuring comprehensive organizational structure exists...');
@@ -2087,33 +2102,65 @@ app.get('/api', (req, res) => {
 
 // User Management Functions
 async function createUserDirectory(username, userData) {
-  const userDir = path.join(USERS_DIR, username);
-  const profileDir = path.join(userDir, 'profile');
-  const projectsDir = path.join(userDir, 'projects');
-  
-  // Create user directory structure
-  await ensureDirectoryExists(userDir);
-  await ensureDirectoryExists(profileDir);
-  await ensureDirectoryExists(projectsDir);
-  
-  // Create user profile
-  const userProfile = {
-    username: username,
-    fullName: userData.fullName,
-    email: userData.email,
-    passwordHash: userData.passwordHash,
-    created: new Date().toISOString(),
-    lastLogin: null,
-    projects: []
-  };
-  
-  await fs.writeFile(
-    path.join(profileDir, 'user.json'),
-    JSON.stringify(userProfile, null, 2),
-    'utf8'
-  );
-  
-  return userProfile;
+  try {
+    console.log(`Creating user directory for: ${username}`);
+    
+    const userDir = path.join(USERS_DIR, username);
+    const profileDir = path.join(userDir, 'profile');
+    const projectsDir = path.join(userDir, 'projects');
+    
+    console.log(`User directory paths:`);
+    console.log(`  userDir: ${userDir}`);
+    console.log(`  profileDir: ${profileDir}`);
+    console.log(`  projectsDir: ${projectsDir}`);
+    
+    // Create user directory structure with explicit error handling
+    console.log('Creating user directory...');
+    await ensureDirectoryExists(userDir);
+    console.log('✅ User directory created');
+    
+    console.log('Creating profile directory...');
+    await ensureDirectoryExists(profileDir);
+    console.log('✅ Profile directory created');
+    
+    console.log('Creating projects directory...');
+    await ensureDirectoryExists(projectsDir);
+    console.log('✅ Projects directory created');
+    
+    // Create user profile
+    const userProfile = {
+      username: username,
+      fullName: userData.fullName,
+      email: userData.email,
+      passwordHash: userData.passwordHash,
+      created: new Date().toISOString(),
+      lastLogin: null,
+      projects: []
+    };
+    
+    // Write profile to file
+    const profilePath = path.join(profileDir, 'user.json');
+    console.log(`Writing profile to: ${profilePath}`);
+    await fs.writeFile(profilePath, JSON.stringify(userProfile, null, 2), 'utf8');
+    console.log('✅ Profile file created');
+    
+    // Verify directory structure was created correctly
+    try {
+      await fs.access(userDir);
+      await fs.access(profileDir);
+      await fs.access(projectsDir);
+      await fs.access(profilePath);
+      console.log('✅ All directories and profile verified');
+    } catch (verifyError) {
+      console.error('❌ Directory verification failed:', verifyError.message);
+      throw new Error(`User directory creation verification failed: ${verifyError.message}`);
+    }
+    
+    return userProfile;
+  } catch (error) {
+    console.error('❌ Error in createUserDirectory:', error);
+    throw new Error(`Failed to create user directory: ${error.message}`);
+  }
 }
 
 async function getUserProfile(username) {
