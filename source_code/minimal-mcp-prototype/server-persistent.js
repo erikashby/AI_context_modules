@@ -25,38 +25,8 @@ const PORT = process.env.PORT || 3000;
 // File system paths
 const CONTEXT_DATA_DIR = path.join(__dirname, 'context-data');
 const PERSONAL_ORG_DIR = path.join(CONTEXT_DATA_DIR, 'personal-organization');
-// Multi-user paths - Use persistent disk at /var/data, fallback to local
-const USERS_DIR = fs.existsSync('/var/data') ? '/var/data/users' : path.join(__dirname, 'users');
-
-// Ensure users directory exists in persistent storage
-if (fs.existsSync('/var/data')) {
-  try {
-    if (!fs.existsSync(USERS_DIR)) {
-      fs.mkdirSync(USERS_DIR, { recursive: true });
-      console.log(`Created users directory in persistent storage: ${USERS_DIR}`);
-      
-      // Migrate existing users from local directory if they exist
-      const localUsersDir = path.join(__dirname, 'users');
-      if (fs.existsSync(localUsersDir)) {
-        const users = fs.readdirSync(localUsersDir, { withFileTypes: true });
-        for (const user of users) {
-          if (user.isDirectory()) {
-            const srcPath = path.join(localUsersDir, user.name);
-            const destPath = path.join(USERS_DIR, user.name);
-            try {
-              fs.cpSync(srcPath, destPath, { recursive: true });
-              console.log(`Migrated user ${user.name} to persistent storage`);
-            } catch (migrateError) {
-              console.error(`Failed to migrate user ${user.name}:`, migrateError);
-            }
-          }
-        }
-      }
-    }
-  } catch (error) {
-    console.error('Error creating users directory in persistent storage:', error);
-  }
-}
+// Multi-user paths - Will be set after checking for persistent disk
+let USERS_DIR;
 const MODULES_DIR = path.join(__dirname, 'modules');
 
 // Utility functions for file operations
@@ -122,8 +92,56 @@ async function getFilePath(projectId, filePath) {
   return fullPath;
 }
 
+async function setupPersistentStorage() {
+  // Check for persistent disk and set USERS_DIR
+  if (await fs.access('/var/data').then(() => true).catch(() => false)) {
+    USERS_DIR = '/var/data/users';
+    console.log('Persistent disk detected at /var/data');
+    
+    try {
+      // Create users directory if it doesn't exist
+      if (!await fs.access(USERS_DIR).then(() => true).catch(() => false)) {
+        await fs.mkdir(USERS_DIR, { recursive: true });
+        console.log(`Created users directory in persistent storage: ${USERS_DIR}`);
+        
+        // Migrate existing users from local directory if they exist
+        const localUsersDir = path.join(__dirname, 'users');
+        if (await fs.access(localUsersDir).then(() => true).catch(() => false)) {
+          const users = await fs.readdir(localUsersDir, { withFileTypes: true });
+          for (const user of users) {
+            if (user.isDirectory()) {
+              const srcPath = path.join(localUsersDir, user.name);
+              const destPath = path.join(USERS_DIR, user.name);
+              try {
+                await fs.cp(srcPath, destPath, { recursive: true });
+                console.log(`Migrated user ${user.name} to persistent storage`);
+              } catch (migrateError) {
+                console.error(`Failed to migrate user ${user.name}:`, migrateError);
+              }
+            }
+          }
+        }
+      } else {
+        console.log(`Persistent users directory already exists: ${USERS_DIR}`);
+      }
+    } catch (error) {
+      console.error('Error setting up persistent storage:', error);
+      // Fallback to local storage
+      USERS_DIR = path.join(__dirname, 'users');
+      console.log(`Falling back to local users directory: ${USERS_DIR}`);
+    }
+  } else {
+    // No persistent disk, use local directory
+    USERS_DIR = path.join(__dirname, 'users');
+    console.log(`No persistent disk found, using local directory: ${USERS_DIR}`);
+  }
+}
+
 async function initializeFileSystem() {
   console.log('Initializing file system...');
+  
+  // Set up persistent storage for users
+  await setupPersistentStorage();
   
   // Ensure base directories exist
   await ensureDirectoryExists(CONTEXT_DATA_DIR);
