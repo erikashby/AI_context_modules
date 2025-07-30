@@ -27,6 +27,36 @@ const CONTEXT_DATA_DIR = path.join(__dirname, 'context-data');
 const PERSONAL_ORG_DIR = path.join(CONTEXT_DATA_DIR, 'personal-organization');
 // Multi-user paths - Use persistent disk at /var/data, fallback to local
 const USERS_DIR = fs.existsSync('/var/data') ? '/var/data/users' : path.join(__dirname, 'users');
+
+// Ensure users directory exists in persistent storage
+if (fs.existsSync('/var/data')) {
+  try {
+    if (!fs.existsSync(USERS_DIR)) {
+      fs.mkdirSync(USERS_DIR, { recursive: true });
+      console.log(`Created users directory in persistent storage: ${USERS_DIR}`);
+      
+      // Migrate existing users from local directory if they exist
+      const localUsersDir = path.join(__dirname, 'users');
+      if (fs.existsSync(localUsersDir)) {
+        const users = fs.readdirSync(localUsersDir, { withFileTypes: true });
+        for (const user of users) {
+          if (user.isDirectory()) {
+            const srcPath = path.join(localUsersDir, user.name);
+            const destPath = path.join(USERS_DIR, user.name);
+            try {
+              fs.cpSync(srcPath, destPath, { recursive: true });
+              console.log(`Migrated user ${user.name} to persistent storage`);
+            } catch (migrateError) {
+              console.error(`Failed to migrate user ${user.name}:`, migrateError);
+            }
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error creating users directory in persistent storage:', error);
+  }
+}
 const MODULES_DIR = path.join(__dirname, 'modules');
 
 // Utility functions for file operations
