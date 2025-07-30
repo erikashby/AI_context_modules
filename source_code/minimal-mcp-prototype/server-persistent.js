@@ -760,6 +760,52 @@ async function handleListProjects(username) {
   }
 }
 
+async function handleListModules() {
+  try {
+    const modulesDir = MODULES_DIR;
+    const modules = await fs.readdir(modulesDir, { withFileTypes: true });
+    
+    let moduleList = 'Available project module templates:\n\n';
+    
+    for (const moduleDir of modules) {
+      if (moduleDir.isDirectory()) {
+        try {
+          const moduleJsonPath = path.join(modulesDir, moduleDir.name, 'module.json');
+          const moduleData = JSON.parse(await fs.readFile(moduleJsonPath, 'utf8'));
+          
+          moduleList += `• **${moduleData.module.id}** - ${moduleData.module.name}\n`;
+          moduleList += `  Description: ${moduleData.module.description}\n`;
+          moduleList += `  Version: ${moduleData.module.version}\n`;
+          
+          if (moduleData.features && moduleData.features.length > 0) {
+            moduleList += `  Features: ${moduleData.features.join(', ')}\n`;
+          }
+          moduleList += '\n';
+        } catch (moduleError) {
+          moduleList += `• **${moduleDir.name}** - (Error reading module info)\n\n`;
+        }
+      }
+    }
+    
+    moduleList += 'To create a project, use: create_project with the module ID above.';
+    
+    return {
+      content: [{ 
+        type: 'text', 
+        text: moduleList
+      }]
+    };
+  } catch (error) {
+    return {
+      content: [{ 
+        type: 'text', 
+        text: `Error listing modules: ${error.message}` 
+      }],
+      isError: true
+    };
+  }
+}
+
 async function handleCreateProject(username, projectName, moduleId) {
   try {
     const modulePath = path.join(MODULES_DIR, moduleId);
@@ -835,6 +881,15 @@ function createServerForUser(username) {
         {
           name: 'list_projects',
           description: `Show available context projects for user ${username}`,
+          inputSchema: {
+            type: 'object',
+            properties: {},
+            required: []
+          }
+        },
+        {
+          name: 'list_modules',
+          description: 'Show available project module templates',
           inputSchema: {
             type: 'object',
             properties: {},
@@ -997,6 +1052,9 @@ function createServerForUser(username) {
       switch (name) {
         case 'list_projects':
           return await handleListProjects(username);
+          
+        case 'list_modules':
+          return await handleListModules();
           
         case 'create_project':
           return await handleCreateProject(username, args.project_name, args.module_id);
@@ -2144,7 +2202,7 @@ app.get('/api', (req, res) => {
       mcp: '/mcp',
       web: '/'
     },
-    tools: ['list_projects', 'explore_project', 'list_folder_contents', 'read_file', 'write_file', 'delete_file', 'create_folder', 'delete_folder'],
+    tools: ['list_projects', 'list_modules', 'explore_project', 'list_folder_contents', 'read_file', 'write_file', 'delete_file', 'create_folder', 'delete_folder'],
     storage: 'persistent_file_system'
   });
 });
