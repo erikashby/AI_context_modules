@@ -25,8 +25,8 @@ const PORT = process.env.PORT || 3000;
 // File system paths
 const CONTEXT_DATA_DIR = path.join(__dirname, 'context-data');
 const PERSONAL_ORG_DIR = path.join(CONTEXT_DATA_DIR, 'personal-organization');
-// Multi-user paths - Use persistent disk mounted at /users, fallback to local
-const USERS_DIR = path.join(__dirname, 'users');
+// Multi-user paths - Use persistent disk at /var/data, fallback to local
+const USERS_DIR = fs.existsSync('/var/data') ? '/var/data/users' : path.join(__dirname, 'users');
 const MODULES_DIR = path.join(__dirname, 'modules');
 
 // Utility functions for file operations
@@ -100,7 +100,7 @@ async function initializeFileSystem() {
   await ensureDirectoryExists(PERSONAL_ORG_DIR);
   await ensureDirectoryExists(USERS_DIR);
   console.log(`Users directory initialized at: ${USERS_DIR}`);
-  console.log(`Users directory is persistent disk: ${USERS_DIR.includes('/opt/render/project/src') ? 'YES' : 'NO'}`);
+  console.log(`Users directory is persistent disk: ${USERS_DIR.includes('/var/data') ? 'YES' : 'NO'}`);
   
   // Create comprehensive structure (additive - preserves existing files)
   console.log('Ensuring comprehensive organizational structure exists...');
