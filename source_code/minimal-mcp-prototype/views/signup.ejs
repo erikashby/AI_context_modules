@@ -1,0 +1,180 @@
+<div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background-color: #111827; padding: 2rem;">
+  <div style="max-width: 28rem; width: 100%; margin: 0 auto;">
+    
+    <!-- Header -->
+    <div style="text-align: center; margin-bottom: 2rem;">
+      <!-- Logo -->
+      <div style="width: 4rem; height: 4rem; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); border-radius: 50%; margin: 0 auto 1rem; display: flex; align-items: center; justify-content: center;">
+        <div style="width: 2rem; height: 2rem; background-color: white; border-radius: 50%;"></div>
+      </div>
+      
+      <h1 style="font-size: 1.5rem; font-weight: bold; color: white; margin-bottom: 0.5rem;">Welcome</h1>
+      <p style="color: #9ca3af; font-size: 0.875rem;">AI Context Service</p>
+    </div>
+    
+    <!-- Signup Form Card -->
+    <div style="background-color: #1f2937; border-radius: 0.5rem; padding: 2rem; border: 1px solid #374151;">
+      <div style="text-align: center; margin-bottom: 2rem;">
+        <h2 style="font-size: 1.25rem; font-weight: 600; color: white; margin-bottom: 0.5rem;">Create Account</h2>
+        <p style="color: #9ca3af; font-size: 0.875rem;">Enter your details to create a new account</p>
+      </div>
+      
+      <!-- Error/Success Messages -->
+      <% if (typeof error !== 'undefined' && error) { %>
+        <div style="background-color: #7f1d1d; border: 1px solid #dc2626; color: #fca5a5; padding: 0.75rem; border-radius: 0.375rem; margin-bottom: 1rem; font-size: 0.875rem;">
+          <%= error %>
+        </div>
+      <% } %>
+      
+      <% if (typeof success !== 'undefined' && success) { %>
+        <div style="background-color: #14532d; border: 1px solid #16a34a; color: #86efac; padding: 0.75rem; border-radius: 0.375rem; margin-bottom: 1rem; font-size: 0.875rem;">
+          <%= success %>
+        </div>
+      <% } %>
+      
+      <!-- Signup Form -->
+      <form action="/signup" method="POST" style="space-y: 1rem;">
+        
+        <!-- Full Name -->
+        <div style="margin-bottom: 1rem;">
+          <label for="fullName" style="display: block; color: white; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem;">
+            Full Name <span style="color: #ef4444;">*</span>
+          </label>
+          <input 
+            type="text" 
+            id="fullName" 
+            name="fullName" 
+            required
+            value="<%= typeof formData !== 'undefined' ? formData.fullName || '' : '' %>"
+            style="width: 100%; background-color: #374151; color: white; border: 1px solid #4b5563; border-radius: 0.375rem; padding: 0.75rem; font-size: 0.875rem; transition: border-color 0.2s;"
+            placeholder="Enter your full name"
+            onfocus="this.style.borderColor='#8b5cf6'; this.style.boxShadow='0 0 0 1px #8b5cf6';"
+            onblur="this.style.borderColor='#4b5563'; this.style.boxShadow='none';"
+          >
+        </div>
+        
+        <!-- Email -->
+        <div style="margin-bottom: 1rem;">
+          <label for="email" style="display: block; color: white; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem;">
+            Email <span style="color: #ef4444;">*</span>
+          </label>
+          <input 
+            type="email" 
+            id="email" 
+            name="email" 
+            required
+            value="<%= typeof formData !== 'undefined' ? formData.email || '' : '' %>"
+            style="width: 100%; background-color: #374151; color: white; border: 1px solid #4b5563; border-radius: 0.375rem; padding: 0.75rem; font-size: 0.875rem; transition: border-color 0.2s;"
+            placeholder="Enter your email address"
+            onfocus="this.style.borderColor='#8b5cf6'; this.style.boxShadow='0 0 0 1px #8b5cf6';"
+            onblur="this.style.borderColor='#4b5563'; this.style.boxShadow='none';"
+          >
+        </div>
+        
+        <!-- Username -->
+        <div style="margin-bottom: 1rem;">
+          <label for="username" style="display: block; color: white; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem;">
+            Username <span style="color: #ef4444;">*</span>
+          </label>
+          <input 
+            type="text" 
+            id="username" 
+            name="username" 
+            required
+            value="<%= typeof formData !== 'undefined' ? formData.username || '' : '' %>"
+            style="width: 100%; background-color: #374151; color: white; border: 1px solid #4b5563; border-radius: 0.375rem; padding: 0.75rem; font-size: 0.875rem; transition: border-color 0.2s;"
+            placeholder="Choose a username"
+            onfocus="this.style.borderColor='#8b5cf6'; this.style.boxShadow='0 0 0 1px #8b5cf6';"
+            onblur="this.style.borderColor='#4b5563'; this.style.boxShadow='none';"
+          >
+          <p style="color: #9ca3af; font-size: 0.75rem; margin-top: 0.25rem;">
+            This will be your MCP endpoint: /mcp/<span id="usernamePreview" style="color: #8b5cf6;">your-username</span>
+          </p>
+        </div>
+        
+        <!-- Password -->
+        <div style="margin-bottom: 1rem;">
+          <label for="password" style="display: block; color: white; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem;">
+            Password <span style="color: #ef4444;">*</span>
+          </label>
+          <input 
+            type="password" 
+            id="password" 
+            name="password" 
+            required
+            style="width: 100%; background-color: #374151; color: white; border: 1px solid #4b5563; border-radius: 0.375rem; padding: 0.75rem; font-size: 0.875rem; transition: border-color 0.2s;"
+            placeholder="Create a secure password"
+            onfocus="this.style.borderColor='#8b5cf6'; this.style.boxShadow='0 0 0 1px #8b5cf6';"
+            onblur="this.style.borderColor='#4b5563'; this.style.boxShadow='none';"
+          >
+        </div>
+        
+        <!-- Confirm Password -->
+        <div style="margin-bottom: 2rem;">
+          <label for="confirmPassword" style="display: block; color: white; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.5rem;">
+            Confirm Password <span style="color: #ef4444;">*</span>
+          </label>
+          <input 
+            type="password" 
+            id="confirmPassword" 
+            name="confirmPassword" 
+            required
+            style="width: 100%; background-color: #374151; color: white; border: 1px solid #4b5563; border-radius: 0.375rem; padding: 0.75rem; font-size: 0.875rem; transition: border-color 0.2s;"
+            placeholder="Confirm your password"
+            onfocus="this.style.borderColor='#8b5cf6'; this.style.boxShadow='0 0 0 1px #8b5cf6';"
+            onblur="this.style.borderColor='#4b5563'; this.style.boxShadow='none';"
+          >
+        </div>
+        
+        <!-- Submit Button -->
+        <button 
+          type="submit"
+          style="width: 100%; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; font-weight: 600; padding: 0.75rem 1rem; border-radius: 0.375rem; border: none; cursor: pointer; font-size: 0.875rem; transition: all 0.2s;"
+          onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 12px rgba(139, 92, 246, 0.4)';"
+          onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none';"
+        >
+          Create Account
+        </button>
+        
+      </form>
+      
+      <!-- Sign In Link -->
+      <div style="text-align: center; margin-top: 1.5rem;">
+        <p style="color: #9ca3af; font-size: 0.875rem;">
+          Already have an account? 
+          <a href="/login" style="color: #8b5cf6; text-decoration: none; font-weight: 500;">
+            Sign in
+          </a>
+        </p>
+      </div>
+      
+    </div>
+  </div>
+</div>
+
+<script>
+// Update username preview
+document.getElementById('username').addEventListener('input', function(e) {
+  const preview = document.getElementById('usernamePreview');
+  preview.textContent = e.target.value || 'your-username';
+});
+
+// Real-time form validation
+document.getElementById('confirmPassword').addEventListener('blur', function() {
+  const password = document.getElementById('password').value;
+  const confirmPassword = this.value;
+  
+  if (password && confirmPassword && password !== confirmPassword) {
+    this.style.borderColor = '#ef4444';
+    this.style.boxShadow = '0 0 0 1px #ef4444';
+  }
+});
+
+// Reset border on focus
+document.querySelectorAll('input').forEach(input => {
+  input.addEventListener('input', function() {
+    this.style.borderColor = '#8b5cf6';
+    this.style.boxShadow = '0 0 0 1px #8b5cf6';
+  });
+});
+</script>

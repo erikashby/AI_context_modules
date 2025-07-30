@@ -2085,6 +2085,149 @@ app.get('/api', (req, res) => {
   });
 });
 
+// User Management Functions
+async function createUserDirectory(username, userData) {
+  const userDir = path.join(USERS_DIR, username);
+  const profileDir = path.join(userDir, 'profile');
+  const projectsDir = path.join(userDir, 'projects');
+  
+  // Create user directory structure
+  await ensureDirectoryExists(userDir);
+  await ensureDirectoryExists(profileDir);
+  await ensureDirectoryExists(projectsDir);
+  
+  // Create user profile
+  const userProfile = {
+    username: username,
+    fullName: userData.fullName,
+    email: userData.email,
+    passwordHash: userData.passwordHash,
+    created: new Date().toISOString(),
+    lastLogin: null,
+    projects: []
+  };
+  
+  await fs.writeFile(
+    path.join(profileDir, 'user.json'),
+    JSON.stringify(userProfile, null, 2),
+    'utf8'
+  );
+  
+  return userProfile;
+}
+
+async function getUserProfile(username) {
+  try {
+    const profilePath = path.join(USERS_DIR, username, 'profile', 'user.json');
+    const profileData = await fs.readFile(profilePath, 'utf8');
+    return JSON.parse(profileData);
+  } catch (error) {
+    return null;
+  }
+}
+
+async function validateUsername(username) {
+  // Username validation: alphanumeric, dash, underscore only, 3-20 chars
+  const usernameRegex = /^[a-zA-Z0-9_-]+$/;
+  if (!usernameRegex.test(username) || username.length < 3 || username.length > 20) {
+    return false;
+  }
+  
+  // Check if username already exists
+  const existingUser = await getUserProfile(username);
+  return existingUser === null;
+}
+
+// Signup Routes
+app.get('/signup', (req, res) => {
+  res.render('signup', { 
+    title: 'Sign Up - AI Context Service',
+    user: req.session.user || null
+  });
+});
+
+app.post('/signup', async (req, res) => {
+  const { fullName, email, username, password, confirmPassword } = req.body;
+  
+  try {
+    // Basic validation
+    if (!fullName || !email || !username || !password || !confirmPassword) {
+      return res.render('signup', {
+        title: 'Sign Up - AI Context Service',
+        error: 'All fields are required',
+        formData: req.body
+      });
+    }
+    
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.render('signup', {
+        title: 'Sign Up - AI Context Service',
+        error: 'Please enter a valid email address',
+        formData: req.body
+      });
+    }
+    
+    // Password validation
+    if (password.length < 8) {
+      return res.render('signup', {
+        title: 'Sign Up - AI Context Service',
+        error: 'Password must be at least 8 characters long',
+        formData: req.body
+      });
+    }
+    
+    // Password confirmation
+    if (password !== confirmPassword) {
+      return res.render('signup', {
+        title: 'Sign Up - AI Context Service',
+        error: 'Passwords do not match',
+        formData: req.body
+      });
+    }
+    
+    // Username validation
+    const isUsernameValid = await validateUsername(username);
+    if (!isUsernameValid) {
+      return res.render('signup', {
+        title: 'Sign Up - AI Context Service',
+        error: 'Username is invalid or already taken. Use 3-20 characters: letters, numbers, dash, or underscore only.',
+        formData: req.body
+      });
+    }
+    
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, 12);
+    
+    // Create user
+    const userData = {
+      fullName,
+      email,
+      passwordHash
+    };
+    
+    const userProfile = await createUserDirectory(username, userData);
+    
+    console.log(`New user created: ${username} (${email})`);
+    
+    // Redirect to login with success message
+    res.render('signup', {
+      title: 'Sign Up - AI Context Service',
+      success: `Account created successfully! You can now sign in with username: ${username}`,
+      formData: {} // Clear form
+    });
+    
+  } catch (error) {
+    console.error('Signup error:', error);
+    res.render('signup', {
+      title: 'Sign Up - AI Context Service',
+      error: 'An error occurred while creating your account. Please try again.',
+      formData: req.body
+    });
+  }
+});
+
 // Stateless MCP endpoint - PRESERVE PROVEN ARCHITECTURE
 // Support both /mcp and /mcp/:username routes
 app.all('/mcp/:username?', async (req, res) => {
