@@ -54,7 +54,7 @@
           <label style="color: #9ca3af; font-size: 0.875rem; margin-bottom: 0.25rem; display: block;">MCP Endpoint:</label>
           <div style="display: flex; align-items: center; gap: 0.5rem;">
             <code id="mcp-endpoint" style="background-color: #374151; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-family: monospace; font-size: 0.875rem; color: #8b5cf6; word-break: break-all;">
-              /mcp/<%= user.username %>/<%= user.mcpKey || 'key-here' %>
+              https://ai-context-service-private.onrender.com/mcp/<%= user.username %>/<%= user.mcpKey || 'key-here' %>
             </code>
             <button onclick="copyEndpoint()" style="background-color: #8b5cf6; color: white; padding: 0.25rem 0.5rem; border-radius: 0.25rem; border: none; cursor: pointer; font-size: 0.75rem;">
               Copy
@@ -232,7 +232,7 @@ async function regenerateKey() {
       // Update the display
       fullKey = data.newKey;
       document.getElementById('mcp-key-display').textContent = data.newKey.substring(0, 4) + '...' + data.newKey.substring(12);
-      document.getElementById('mcp-endpoint').textContent = data.mcpEndpoint;
+      document.getElementById('mcp-endpoint').textContent = 'https://ai-context-service-private.onrender.com' + data.mcpEndpoint;
       keyVisible = false;
       document.querySelector('button[onclick="toggleKeyVisibility()"]').textContent = 'Show';
       
