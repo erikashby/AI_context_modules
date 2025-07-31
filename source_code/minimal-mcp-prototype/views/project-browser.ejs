@@ -64,7 +64,9 @@
             <p id="current-file-info" style="color: #9ca3af; font-size: 0.875rem; margin: 0.25rem 0 0 0;"></p>
           </div>
           <div id="file-actions" style="display: flex; gap: 0.5rem;">
-            <!-- File actions can be added here -->
+            <button id="view-toggle" style="display: none; background-color: #8b5cf6; color: white; padding: 0.375rem 0.75rem; border-radius: 0.25rem; border: none; cursor: pointer; font-size: 0.75rem; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#7c3aed'" onmouseout="this.style.backgroundColor='#8b5cf6'">
+              Show Raw
+            </button>
           </div>
         </div>
       </div>
@@ -84,7 +86,11 @@
         
         <!-- File Content Display -->
         <div id="file-content" style="display: none; height: 100%; overflow: auto;">
+          <!-- Raw Text View -->
           <pre id="file-text-content" style="margin: 0; padding: 2rem; font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; font-size: 0.875rem; line-height: 1.5; color: #e5e7eb; background-color: transparent; white-space: pre-wrap; word-wrap: break-word;"></pre>
+          
+          <!-- Markdown Rendered View -->
+          <div id="file-markdown-content" style="display: none; padding: 2rem; color: #e5e7eb; background-color: transparent; line-height: 1.6; max-width: none;"></div>
         </div>
         
         <!-- Loading Indicator -->
@@ -152,12 +158,172 @@
 .tree-folder.collapsed {
   display: none;
 }
+
+/* Markdown Styles */
+.markdown-content h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  margin-top: 2rem;
+  color: #f9fafb;
+  border-bottom: 2px solid #374151;
+  padding-bottom: 0.5rem;
+}
+
+.markdown-content h1:first-child {
+  margin-top: 0;
+}
+
+.markdown-content h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  margin-top: 1.5rem;
+  color: #f3f4f6;
+  border-bottom: 1px solid #374151;
+  padding-bottom: 0.25rem;
+}
+
+.markdown-content h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  margin-top: 1.25rem;
+  color: #f3f4f6;
+}
+
+.markdown-content h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  margin-top: 1rem;
+  color: #f3f4f6;
+}
+
+.markdown-content h5, .markdown-content h6 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  margin-top: 1rem;
+  color: #f3f4f6;
+}
+
+.markdown-content p {
+  margin-bottom: 1rem;
+  color: #e5e7eb;
+}
+
+.markdown-content ul, .markdown-content ol {
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+  color: #e5e7eb;
+}
+
+.markdown-content li {
+  margin-bottom: 0.25rem;
+}
+
+.markdown-content ul li {
+  list-style-type: disc;
+}
+
+.markdown-content ol li {
+  list-style-type: decimal;
+}
+
+.markdown-content blockquote {
+  border-left: 4px solid #8b5cf6;
+  padding-left: 1rem;
+  margin: 1rem 0;
+  font-style: italic;
+  color: #d1d5db;
+  background-color: #1f2937;
+  padding: 1rem;
+  border-radius: 0.25rem;
+}
+
+.markdown-content code {
+  background-color: #374151;
+  color: #f59e0b;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.875rem;
+}
+
+.markdown-content pre {
+  background-color: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin: 1rem 0;
+  overflow-x: auto;
+}
+
+.markdown-content pre code {
+  background-color: transparent;
+  color: #e5e7eb;
+  padding: 0;
+}
+
+.markdown-content a {
+  color: #8b5cf6;
+  text-decoration: underline;
+}
+
+.markdown-content a:hover {
+  color: #a78bfa;
+}
+
+.markdown-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+.markdown-content th,
+.markdown-content td {
+  border: 1px solid #374151;
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.markdown-content th {
+  background-color: #1f2937;
+  font-weight: 600;
+  color: #f3f4f6;
+}
+
+.markdown-content td {
+  color: #e5e7eb;
+}
+
+.markdown-content hr {
+  border: none;
+  border-top: 2px solid #374151;
+  margin: 2rem 0;
+}
+
+.markdown-content strong {
+  font-weight: 600;
+  color: #f9fafb;
+}
+
+.markdown-content em {
+  font-style: italic;
+  color: #f3f4f6;
+}
 </style>
+
+<!-- Marked.js for Markdown parsing -->
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js"></script>
 
 <script>
 const projectName = '<%= projectName %>';
 let currentPath = '';
 let selectedFile = null;
+let currentFileData = null;
+let isMarkdownView = false;
 
 // Initialize file tree
 async function loadFileTree(path = '') {
@@ -270,11 +436,27 @@ function displayFile(path, fileData) {
   const fileName = path.split('/').pop();
   const fileSize = formatFileSize(fileData.size);
   const modifiedDate = new Date(fileData.modified).toLocaleString();
+  const isMarkdownFile = fileData.extension === '.md';
+  
+  // Store current file data
+  currentFileData = fileData;
   
   // Update header
   document.getElementById('current-file-name').textContent = fileName;
   document.getElementById('current-file-info').textContent = `${fileSize} • Modified ${modifiedDate}`;
   document.getElementById('content-header').style.display = 'block';
+  
+  // Show/hide view toggle for Markdown files
+  const viewToggle = document.getElementById('view-toggle');
+  if (isMarkdownFile && fileData.content !== null) {
+    viewToggle.style.display = 'block';
+    viewToggle.onclick = toggleView;
+    isMarkdownView = true; // Default to rendered view for .md files
+    viewToggle.textContent = 'Show Raw';
+  } else {
+    viewToggle.style.display = 'none';
+    isMarkdownView = false;
+  }
   
   // Hide welcome message and loading
   document.getElementById('welcome-message').style.display = 'none';
@@ -282,8 +464,8 @@ function displayFile(path, fileData) {
   document.getElementById('content-error').style.display = 'none';
   
   if (fileData.content !== null) {
-    // Display text content
-    document.getElementById('file-text-content').textContent = fileData.content;
+    // Display content based on file type and view mode
+    updateContentView();
     document.getElementById('file-content').style.display = 'block';
   } else {
     // Show error for non-text files
@@ -292,6 +474,35 @@ function displayFile(path, fileData) {
       fileData.type === 'binary' ? 'This is a binary file that cannot be displayed in the browser.' : fileData.error
     );
   }
+}
+
+// Update content view based on current mode
+function updateContentView() {
+  const textContent = document.getElementById('file-text-content');
+  const markdownContent = document.getElementById('file-markdown-content');
+  
+  if (isMarkdownView && currentFileData.extension === '.md') {
+    // Show rendered Markdown
+    textContent.style.display = 'none';
+    markdownContent.style.display = 'block';
+    markdownContent.className = 'markdown-content';
+    markdownContent.innerHTML = marked.parse(currentFileData.content);
+  } else {
+    // Show raw text
+    textContent.style.display = 'block';
+    markdownContent.style.display = 'none';
+    textContent.textContent = currentFileData.content;
+  }
+}
+
+// Toggle between raw and rendered view
+function toggleView() {
+  const viewToggle = document.getElementById('view-toggle');
+  
+  isMarkdownView = !isMarkdownView;
+  viewToggle.textContent = isMarkdownView ? 'Show Raw' : 'Show Rendered';
+  
+  updateContentView();
 }
 
 // Show loading state
