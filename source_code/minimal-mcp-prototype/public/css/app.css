@@ -1,0 +1,51 @@
+/* Custom styles to enhance Tailwind */
+
+/* Form enhancements */
+.form-input {
+    @apply w-full bg-gray-700 text-white rounded-lg p-3 mt-1 border border-gray-600 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 focus:outline-none transition-colors;
+}
+
+.form-label {
+    @apply text-white text-sm font-medium;
+}
+
+.form-error {
+    @apply text-red-400 text-sm mt-1;
+}
+
+.btn-primary {
+    @apply bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200;
+}
+
+.btn-secondary {
+    @apply bg-transparent hover:bg-gray-800 text-white font-semibold py-3 px-6 rounded-lg border border-gray-600 hover:border-gray-500 transition-colors duration-200;
+}
+
+/* Card styles */
+.card {
+    @apply bg-gray-800 rounded-lg p-6 border border-gray-700;
+}
+
+/* Loading states */
+.loading {
+    @apply opacity-50 cursor-not-allowed;
+}
+
+/* Custom purple gradient */
+.gradient-purple {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+}
+
+/* Animation for logo */
+@keyframes pulse-purple {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.7);
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(139, 92, 246, 0);
+    }
+}
+
+.pulse-purple {
+    animation: pulse-purple 2s infinite;
+}

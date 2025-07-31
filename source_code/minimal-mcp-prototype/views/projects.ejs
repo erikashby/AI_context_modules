@@ -1,0 +1,96 @@
+<div style="min-height: 100vh; background-color: #111827; color: white;">
+  <!-- Header -->
+  <header style="background-color: #1f2937; border-bottom: 1px solid #374151; padding: 1rem 2rem;">
+    <div style="max-width: 72rem; margin: 0 auto; display: flex; justify-content: space-between; align-items: center;">
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <!-- Logo -->
+        <div style="width: 2.5rem; height: 2.5rem; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+          <div style="width: 1.25rem; height: 1.25rem; background-color: white; border-radius: 50%;"></div>
+        </div>
+        <h1 style="font-size: 1.25rem; font-weight: 600; margin: 0;">
+          <a href="/dashboard" style="color: white; text-decoration: none;">AI Context Service</a>
+        </h1>
+      </div>
+      
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <span style="color: #9ca3af; font-size: 0.875rem;">Welcome, <%= user.fullName %></span>
+        <a href="/logout" style="background-color: #374151; color: white; padding: 0.5rem 1rem; border-radius: 0.375rem; text-decoration: none; font-size: 0.875rem; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#4b5563'" onmouseout="this.style.backgroundColor='#374151'">
+          Sign Out
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main style="max-width: 72rem; margin: 0 auto; padding: 2rem;">
+    
+    <!-- Breadcrumb -->
+    <nav style="margin-bottom: 2rem;">
+      <div style="display: flex; align-items: center; gap: 0.5rem; color: #9ca3af; font-size: 0.875rem;">
+        <a href="/dashboard" style="color: #8b5cf6; text-decoration: none;">Dashboard</a>
+        <span>/</span>
+        <span>Projects</span>
+      </div>
+    </nav>
+    
+    <!-- Page Header -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+      <div>
+        <h2 style="font-size: 2rem; font-weight: 600; margin: 0 0 0.5rem 0;">Your Projects</h2>
+        <p style="color: #9ca3af; margin: 0;">Browse and explore your project files and documents.</p>
+      </div>
+    </div>
+
+    <!-- Projects Grid -->
+    <% if (projects.length === 0) { %>
+      <div style="background-color: #1f2937; border-radius: 0.5rem; padding: 3rem; text-align: center; border: 1px solid #374151;">
+        <div style="width: 4rem; height: 4rem; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
+          <span style="color: white; font-size: 1.5rem;">📁</span>
+        </div>
+        <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;">No Projects Yet</h3>
+        <p style="color: #9ca3af; margin-bottom: 2rem;">
+          Create your first project using Claude Desktop to get started with organizing your context.
+        </p>
+        <div style="background-color: #111827; border-radius: 0.375rem; padding: 1rem; border: 1px solid #4b5563; max-width: 32rem; margin: 0 auto;">
+          <p style="color: #9ca3af; font-size: 0.875rem; margin-bottom: 0.5rem;">
+            In Claude Desktop, use the <code style="background-color: #374151; padding: 0.125rem 0.25rem; border-radius: 0.25rem; color: #8b5cf6;">create_project</code> tool:
+          </p>
+          <code style="background-color: #374151; padding: 0.5rem; border-radius: 0.25rem; display: block; color: #8b5cf6; font-size: 0.875rem;">
+            Create a new project called "my-project" using the personal-effectiveness-v1 template
+          </code>
+        </div>
+      </div>
+    <% } else { %>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem;">
+        <% projects.forEach(project => { %>
+          <div style="background-color: #1f2937; border-radius: 0.5rem; padding: 1.5rem; border: 1px solid #374151; transition: border-color 0.2s, transform 0.2s;" onmouseover="this.style.borderColor='#8b5cf6'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='#374151'; this.style.transform='translateY(0)'">
+            <div style="display: flex; align-items: start; gap: 1rem; margin-bottom: 1rem;">
+              <div style="width: 3rem; height: 3rem; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <span style="color: white; font-size: 1.125rem;">📁</span>
+              </div>
+              <div style="flex: 1; min-width: 0;">
+                <h3 style="font-size: 1.125rem; font-weight: 600; margin: 0 0 0.25rem 0; word-break: break-word;">
+                  <%= project.name %>
+                </h3>
+                <p style="color: #9ca3af; font-size: 0.875rem; margin: 0; line-height: 1.4;">
+                  <%= project.description.length > 80 ? project.description.substring(0, 80) + '...' : project.description %>
+                </p>
+              </div>
+            </div>
+            
+            <div style="display: flex; justify-content: between; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+              <span style="color: #6b7280; font-size: 0.75rem;">
+                Modified: <%= new Date(project.modified).toLocaleDateString() %>
+              </span>
+            </div>
+            
+            <a href="<%= project.path %>" style="background-color: #8b5cf6; color: white; padding: 0.5rem 1rem; border-radius: 0.25rem; text-decoration: none; font-size: 0.875rem; font-weight: 500; display: inline-block; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#7c3aed'" onmouseout="this.style.backgroundColor='#8b5cf6'">
+              Browse Files
+            </a>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+
+  </main>
+</div>

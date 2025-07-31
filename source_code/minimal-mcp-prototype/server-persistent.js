@@ -6,6 +6,10 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs').promises;
 const path = require('path');
+const crypto = require('crypto');
+const session = require('express-session');
+const bcrypt = require('bcrypt');
+const ejs = require('ejs');
 const { Server } = require('@modelcontextprotocol/sdk/server/index.js');
 const { StreamableHTTPServerTransport } = require('@modelcontextprotocol/sdk/server/streamableHttp.js');
 const { 
@@ -22,16 +26,48 @@ const PORT = process.env.PORT || 3000;
 // File system paths
 const CONTEXT_DATA_DIR = path.join(__dirname, 'context-data');
 const PERSONAL_ORG_DIR = path.join(CONTEXT_DATA_DIR, 'personal-organization');
-// Multi-user paths
-const USERS_DIR = path.join(__dirname, 'users');
+// Multi-user paths - Will be set after checking for persistent disk
+let USERS_DIR;
 const MODULES_DIR = path.join(__dirname, 'modules');
+
+// MCP Authentication functions
+function generateMCPKey() {
+  return crypto.randomUUID().replace(/-/g, '').substring(0, 16);
+}
+
+async function validateUserMCPKey(username, providedKey) {
+  try {
+    if (!username || !providedKey) return false;
+    
+    const userProfile = await getUserProfile(username);
+    if (!userProfile || !userProfile.mcpKey) return false;
+    
+    return userProfile.mcpKey === providedKey;
+  } catch (error) {
+    console.error('MCP key validation error:', error);
+    return false;
+  }
+}
 
 // Utility functions for file operations
 async function ensureDirectoryExists(dirPath) {
   try {
     await fs.access(dirPath);
-  } catch {
-    await fs.mkdir(dirPath, { recursive: true });
+    console.log(`Directory already exists: ${dirPath}`);
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      console.log(`Creating directory: ${dirPath}`);
+      try {
+        await fs.mkdir(dirPath, { recursive: true });
+        console.log(`Successfully created directory: ${dirPath}`);
+      } catch (mkdirError) {
+        console.error(`Failed to create directory ${dirPath}:`, mkdirError);
+        throw new Error(`Cannot create directory ${dirPath}: ${mkdirError.message}`);
+      }
+    } else {
+      console.error(`Error accessing directory ${dirPath}:`, error);
+      throw new Error(`Cannot access directory ${dirPath}: ${error.message}`);
+    }
   }
 }
 
@@ -76,12 +112,101 @@ async function getFilePath(projectId, filePath) {
   return fullPath;
 }
 
+async function setupPersistentStorage() {
+  // Check for persistent disk and set USERS_DIR
+  if (await fs.access('/var/data').then(() => true).catch(() => false)) {
+    USERS_DIR = '/var/data/users';
+    console.log('Persistent disk detected at /var/data');
+    
+    try {
+      // Create users directory if it doesn't exist
+      if (!await fs.access(USERS_DIR).then(() => true).catch(() => false)) {
+        await fs.mkdir(USERS_DIR, { recursive: true });
+        console.log(`Created users directory in persistent storage: ${USERS_DIR}`);
+        
+        // Migrate existing users from local directory if they exist
+        const localUsersDir = path.join(__dirname, 'users');
+        if (await fs.access(localUsersDir).then(() => true).catch(() => false)) {
+          const users = await fs.readdir(localUsersDir, { withFileTypes: true });
+          for (const user of users) {
+            if (user.isDirectory()) {
+              const srcPath = path.join(localUsersDir, user.name);
+              const destPath = path.join(USERS_DIR, user.name);
+              try {
+                await fs.cp(srcPath, destPath, { recursive: true });
+                console.log(`Migrated user ${user.name} to persistent storage`);
+              } catch (migrateError) {
+                console.error(`Failed to migrate user ${user.name}:`, migrateError);
+              }
+            }
+          }
+        }
+      } else {
+        console.log(`Persistent users directory already exists: ${USERS_DIR}`);
+      }
+    } catch (error) {
+      console.error('Error setting up persistent storage:', error);
+      // Fallback to local storage
+      USERS_DIR = path.join(__dirname, 'users');
+      console.log(`Falling back to local users directory: ${USERS_DIR}`);
+    }
+  } else {
+    // No persistent disk, use local directory
+    USERS_DIR = path.join(__dirname, 'users');
+    console.log(`No persistent disk found, using local directory: ${USERS_DIR}`);
+  }
+}
+
+async function migrateExistingUsers() {
+  try {
+    console.log('Checking for existing users to migrate...');
+    
+    const users = await fs.readdir(USERS_DIR, { withFileTypes: true });
+    
+    for (const userDir of users) {
+      if (userDir.isDirectory()) {
+        const username = userDir.name;
+        const profilePath = path.join(USERS_DIR, username, 'profile', 'user.json');
+        
+        try {
+          const userProfileData = await fs.readFile(profilePath, 'utf8');
+          const userProfile = JSON.parse(userProfileData);
+          
+          // Check if user already has an MCP key
+          if (!userProfile.mcpKey) {
+            userProfile.mcpKey = generateMCPKey();
+            await fs.writeFile(profilePath, JSON.stringify(userProfile, null, 2), 'utf8');
+            console.log(`✅ Added MCP key for existing user: ${username}`);
+          } else {
+            console.log(`✅ User ${username} already has MCP key`);
+          }
+        } catch (profileError) {
+          console.log(`⚠️ Could not migrate user ${username}:`, profileError.message);
+        }
+      }
+    }
+    
+    console.log('User migration completed');
+  } catch (error) {
+    console.error('Error during user migration:', error);
+  }
+}
+
 async function initializeFileSystem() {
   console.log('Initializing file system...');
+  
+  // Set up persistent storage for users
+  await setupPersistentStorage();
   
   // Ensure base directories exist
   await ensureDirectoryExists(CONTEXT_DATA_DIR);
   await ensureDirectoryExists(PERSONAL_ORG_DIR);
+  await ensureDirectoryExists(USERS_DIR);
+  console.log(`Users directory initialized at: ${USERS_DIR}`);
+  console.log(`Users directory is persistent disk: ${USERS_DIR.includes('/var/data') ? 'YES' : 'NO'}`);
+  
+  // Migrate existing users to add MCP keys
+  await migrateExistingUsers();
   
   // Create comprehensive structure (additive - preserves existing files)
   console.log('Ensuring comprehensive organizational structure exists...');
@@ -693,6 +818,52 @@ async function handleListProjects(username) {
   }
 }
 
+async function handleListModules() {
+  try {
+    const modulesDir = MODULES_DIR;
+    const modules = await fs.readdir(modulesDir, { withFileTypes: true });
+    
+    let moduleList = 'Available project module templates:\n\n';
+    
+    for (const moduleDir of modules) {
+      if (moduleDir.isDirectory()) {
+        try {
+          const moduleJsonPath = path.join(modulesDir, moduleDir.name, 'module.json');
+          const moduleData = JSON.parse(await fs.readFile(moduleJsonPath, 'utf8'));
+          
+          moduleList += `• **${moduleData.module.id}** - ${moduleData.module.name}\n`;
+          moduleList += `  Description: ${moduleData.module.description}\n`;
+          moduleList += `  Version: ${moduleData.module.version}\n`;
+          
+          if (moduleData.features && moduleData.features.length > 0) {
+            moduleList += `  Features: ${moduleData.features.join(', ')}\n`;
+          }
+          moduleList += '\n';
+        } catch (moduleError) {
+          moduleList += `• **${moduleDir.name}** - (Error reading module info)\n\n`;
+        }
+      }
+    }
+    
+    moduleList += 'To create a project, use: create_project with the module ID above.';
+    
+    return {
+      content: [{ 
+        type: 'text', 
+        text: moduleList
+      }]
+    };
+  } catch (error) {
+    return {
+      content: [{ 
+        type: 'text', 
+        text: `Error listing modules: ${error.message}` 
+      }],
+      isError: true
+    };
+  }
+}
+
 async function handleCreateProject(username, projectName, moduleId) {
   try {
     const modulePath = path.join(MODULES_DIR, moduleId);
@@ -768,6 +939,15 @@ function createServerForUser(username) {
         {
           name: 'list_projects',
           description: `Show available context projects for user ${username}`,
+          inputSchema: {
+            type: 'object',
+            properties: {},
+            required: []
+          }
+        },
+        {
+          name: 'list_modules',
+          description: 'Show available project module templates',
           inputSchema: {
             type: 'object',
             properties: {},
@@ -930,6 +1110,9 @@ function createServerForUser(username) {
       switch (name) {
         case 'list_projects':
           return await handleListProjects(username);
+          
+        case 'list_modules':
+          return await handleListModules();
           
         case 'create_project':
           return await handleCreateProject(username, args.project_name, args.module_id);
@@ -2025,6 +2208,24 @@ function createServer() {
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Web interface configuration
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Session configuration
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'ai-context-service-dev-secret-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false, // Temporarily disable for debugging - Render uses HTTPS proxy
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
 
 // Health check
 app.get('/health', (req, res) => {
@@ -2038,34 +2239,628 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Root endpoint
+// Web Routes
+
+// Root endpoint - Home page
 app.get('/', (req, res) => {
+  res.render('home', { 
+    title: 'AI Context Service - Personal Effectiveness Intelligence',
+    user: req.session.user || null
+  });
+});
+
+// API info endpoint (moved to /api for JSON responses)
+app.get('/api', (req, res) => {
   res.json({
     service: 'AI Context Service - Persistent Tech Proof',
     version: '2.3.0',
     transport: 'StreamableHTTP-Stateless',
     endpoints: {
       health: '/health',
-      mcp: '/mcp'
+      mcp: '/mcp',
+      web: '/'
     },
-    tools: ['list_projects', 'explore_project', 'list_folder_contents', 'read_file', 'write_file', 'delete_file', 'create_folder', 'delete_folder'],
+    tools: ['list_projects', 'list_modules', 'explore_project', 'list_folder_contents', 'read_file', 'write_file', 'delete_file', 'create_folder', 'delete_folder'],
     storage: 'persistent_file_system'
   });
 });
 
-// Stateless MCP endpoint - PRESERVE PROVEN ARCHITECTURE
-// Support both /mcp and /mcp/:username routes
-app.all('/mcp/:username?', async (req, res) => {
+// User Management Functions
+async function createUserDirectory(username, userData) {
+  try {
+    console.log(`Creating user directory for: ${username}`);
+    
+    const userDir = path.join(USERS_DIR, username);
+    const profileDir = path.join(userDir, 'profile');
+    const projectsDir = path.join(userDir, 'projects');
+    
+    console.log(`User directory paths:`);
+    console.log(`  userDir: ${userDir}`);
+    console.log(`  profileDir: ${profileDir}`);
+    console.log(`  projectsDir: ${projectsDir}`);
+    
+    // Create user directory structure with explicit error handling
+    console.log('Creating user directory...');
+    await ensureDirectoryExists(userDir);
+    console.log('✅ User directory created');
+    
+    console.log('Creating profile directory...');
+    await ensureDirectoryExists(profileDir);
+    console.log('✅ Profile directory created');
+    
+    console.log('Creating projects directory...');
+    await ensureDirectoryExists(projectsDir);
+    console.log('✅ Projects directory created');
+    
+    // Create user profile
+    const userProfile = {
+      username: username,
+      fullName: userData.fullName,
+      email: userData.email,
+      passwordHash: userData.passwordHash,
+      mcpKey: generateMCPKey(),
+      created: new Date().toISOString(),
+      lastLogin: null,
+      projects: []
+    };
+    
+    // Write profile to file
+    const profilePath = path.join(profileDir, 'user.json');
+    console.log(`Writing profile to: ${profilePath}`);
+    await fs.writeFile(profilePath, JSON.stringify(userProfile, null, 2), 'utf8');
+    console.log('✅ Profile file created');
+    
+    // Verify directory structure was created correctly
+    try {
+      await fs.access(userDir);
+      await fs.access(profileDir);
+      await fs.access(projectsDir);
+      await fs.access(profilePath);
+      console.log('✅ All directories and profile verified');
+    } catch (verifyError) {
+      console.error('❌ Directory verification failed:', verifyError.message);
+      throw new Error(`User directory creation verification failed: ${verifyError.message}`);
+    }
+    
+    return userProfile;
+  } catch (error) {
+    console.error('❌ Error in createUserDirectory:', error);
+    throw new Error(`Failed to create user directory: ${error.message}`);
+  }
+}
+
+async function getUserProfile(username) {
+  try {
+    const profilePath = path.join(USERS_DIR, username, 'profile', 'user.json');
+    const profileData = await fs.readFile(profilePath, 'utf8');
+    return JSON.parse(profileData);
+  } catch (error) {
+    return null;
+  }
+}
+
+async function validateUsername(username) {
+  // Username validation: alphanumeric, dash, underscore only, 3-20 chars
+  const usernameRegex = /^[a-zA-Z0-9_-]+$/;
+  if (!usernameRegex.test(username) || username.length < 3 || username.length > 20) {
+    return false;
+  }
+  
+  // Check if username already exists
+  const existingUser = await getUserProfile(username);
+  return existingUser === null;
+}
+
+// Signup Routes
+app.get('/signup', (req, res) => {
+  res.render('signup', { 
+    title: 'Sign Up - AI Context Service',
+    user: req.session.user || null
+  });
+});
+
+app.post('/signup', async (req, res) => {
+  const { fullName, email, username, password, confirmPassword } = req.body;
+  
+  try {
+    // Basic validation
+    if (!fullName || !email || !username || !password || !confirmPassword) {
+      return res.render('signup', {
+        title: 'Sign Up - AI Context Service',
+        error: 'All fields are required',
+        formData: req.body
+      });
+    }
+    
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.render('signup', {
+        title: 'Sign Up - AI Context Service',
+        error: 'Please enter a valid email address',
+        formData: req.body
+      });
+    }
+    
+    // Password validation
+    if (password.length < 8) {
+      return res.render('signup', {
+        title: 'Sign Up - AI Context Service',
+        error: 'Password must be at least 8 characters long',
+        formData: req.body
+      });
+    }
+    
+    // Password confirmation
+    if (password !== confirmPassword) {
+      return res.render('signup', {
+        title: 'Sign Up - AI Context Service',
+        error: 'Passwords do not match',
+        formData: req.body
+      });
+    }
+    
+    // Username validation
+    const isUsernameValid = await validateUsername(username);
+    if (!isUsernameValid) {
+      return res.render('signup', {
+        title: 'Sign Up - AI Context Service',
+        error: 'Username is invalid or already taken. Use 3-20 characters: letters, numbers, dash, or underscore only.',
+        formData: req.body
+      });
+    }
+    
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, 12);
+    
+    // Create user
+    const userData = {
+      fullName,
+      email,
+      passwordHash
+    };
+    
+    const userProfile = await createUserDirectory(username, userData);
+    
+    console.log(`New user created: ${username} (${email})`);
+    
+    // Redirect to login with success message
+    res.render('signup', {
+      title: 'Sign Up - AI Context Service',
+      success: `Account created successfully! You can now sign in with username: ${username}`,
+      formData: {} // Clear form
+    });
+    
+  } catch (error) {
+    console.error('Signup error:', error);
+    res.render('signup', {
+      title: 'Sign Up - AI Context Service',
+      error: 'An error occurred while creating your account. Please try again.',
+      formData: req.body
+    });
+  }
+});
+
+// Login Routes
+app.get('/login', (req, res) => {
+  res.render('login', { 
+    title: 'Sign In - AI Context Service',
+    user: req.session.user || null
+  });
+});
+
+app.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+  
+  try {
+    // Basic validation
+    if (!username || !password) {
+      return res.render('login', {
+        title: 'Sign In - AI Context Service',
+        error: 'Username and password are required',
+        formData: req.body
+      });
+    }
+    
+    // Get user profile
+    const userProfile = await getUserProfile(username);
+    if (!userProfile) {
+      return res.render('login', {
+        title: 'Sign In - AI Context Service',
+        error: 'Invalid username or password',
+        formData: { username } // Preserve username but clear password
+      });
+    }
+    
+    // Check password
+    const isPasswordValid = await bcrypt.compare(password, userProfile.passwordHash);
+    if (!isPasswordValid) {
+      return res.render('login', {
+        title: 'Sign In - AI Context Service',
+        error: 'Invalid username or password',
+        formData: { username } // Preserve username but clear password
+      });
+    }
+    
+    // Update last login
+    userProfile.lastLogin = new Date().toISOString();
+    const profilePath = path.join(USERS_DIR, username, 'profile', 'user.json');
+    await fs.writeFile(profilePath, JSON.stringify(userProfile, null, 2), 'utf8');
+    
+    // Create session
+    req.session.user = {
+      username: userProfile.username,
+      fullName: userProfile.fullName,
+      email: userProfile.email,
+      mcpKey: userProfile.mcpKey,
+      created: userProfile.created,
+      lastLogin: userProfile.lastLogin,
+      projects: userProfile.projects
+    };
+    
+    console.log(`User logged in: ${username}`);
+    
+    // Redirect to dashboard
+    res.redirect('/dashboard');
+    
+  } catch (error) {
+    console.error('Login error:', error);
+    res.render('login', {
+      title: 'Sign In - AI Context Service',
+      error: 'An error occurred while signing in. Please try again.',
+      formData: req.body
+    });
+  }
+});
+
+// Dashboard Route
+app.get('/dashboard', async (req, res) => {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
+  
+  try {
+    // Get dynamic project count from filesystem (not user profile)
+    const userProjectsDir = path.join(USERS_DIR, req.session.user.username, 'projects');
+    let projectCount = 0;
+    
+    try {
+      const projects = await fs.readdir(userProjectsDir, { withFileTypes: true });
+      projectCount = projects.filter(item => item.isDirectory()).length;
+      console.log(`Dashboard: User ${req.session.user.username} has ${projectCount} projects`);
+    } catch (projectError) {
+      console.log(`Dashboard: Could not count projects for ${req.session.user.username}:`, projectError.message);
+      projectCount = 0;
+    }
+    
+    // Create enhanced user object with dynamic project count
+    const enhancedUser = {
+      ...req.session.user,
+      actualProjectCount: projectCount
+    };
+    
+    res.render('dashboard', {
+      title: 'Dashboard - AI Context Service',
+      user: enhancedUser
+    });
+    
+  } catch (error) {
+    console.error('Dashboard error:', error);
+    res.render('dashboard', {
+      title: 'Dashboard - AI Context Service',
+      user: req.session.user
+    });
+  }
+});
+
+// Key Regeneration Route
+app.post('/dashboard/regenerate-key', async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  
+  try {
+    const username = req.session.user.username;
+    const newKey = generateMCPKey();
+    
+    // Update user profile
+    const userProfile = await getUserProfile(username);
+    if (!userProfile) {
+      return res.status(404).json({ error: 'User profile not found' });
+    }
+    
+    userProfile.mcpKey = newKey;
+    
+    const profilePath = path.join(USERS_DIR, username, 'profile', 'user.json');
+    await fs.writeFile(profilePath, JSON.stringify(userProfile, null, 2), 'utf8');
+    
+    // Update session
+    req.session.user.mcpKey = newKey;
+    
+    console.log(`MCP key regenerated for user: ${username}`);
+    
+    res.json({
+      success: true,
+      newKey: newKey,
+      mcpEndpoint: `/mcp/${username}/${newKey}`
+    });
+    
+  } catch (error) {
+    console.error('Key regeneration error:', error);
+    res.status(500).json({ error: 'Failed to regenerate key' });
+  }
+});
+
+// Logout Route
+app.get('/logout', (req, res) => {
+  const username = req.session.user?.username;
+  req.session.destroy((err) => {
+    if (err) {
+      console.error('Logout error:', err);
+    } else {
+      console.log(`User logged out: ${username}`);
+    }
+    res.redirect('/');
+  });
+});
+
+// File Browser Routes
+app.get('/dashboard/projects', async (req, res) => {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
+  
+  try {
+    const userProjectsDir = path.join(USERS_DIR, req.session.user.username, 'projects');
+    const projects = [];
+    
+    try {
+      const projectDirs = await fs.readdir(userProjectsDir, { withFileTypes: true });
+      
+      for (const dirent of projectDirs) {
+        if (dirent.isDirectory()) {
+          const projectPath = path.join(userProjectsDir, dirent.name);
+          const stats = await fs.stat(projectPath);
+          
+          // Try to get project description from README or module.json
+          let description = 'No description available';
+          try {
+            const moduleJsonPath = path.join(projectPath, 'module.json');
+            const moduleJson = JSON.parse(await fs.readFile(moduleJsonPath, 'utf8'));
+            description = moduleJson.description || description;
+          } catch {
+            try {
+              const readmePath = path.join(projectPath, 'README.md');
+              const readmeContent = await fs.readFile(readmePath, 'utf8');
+              // Extract first line after title as description
+              const lines = readmeContent.split('\n').filter(line => line.trim());
+              description = lines.length > 1 ? lines[1] : description;
+            } catch {
+              // Keep default description
+            }
+          }
+          
+          projects.push({
+            name: dirent.name,
+            description,
+            modified: stats.mtime,
+            path: `/dashboard/projects/${encodeURIComponent(dirent.name)}`
+          });
+        }
+      }
+    } catch (error) {
+      console.log(`Could not read projects for ${req.session.user.username}:`, error.message);
+    }
+    
+    // Sort by modification date (newest first)
+    projects.sort((a, b) => b.modified - a.modified);
+    
+    res.render('projects', {
+      title: 'Projects - AI Context Service',
+      user: req.session.user,
+      projects
+    });
+    
+  } catch (error) {
+    console.error('Projects page error:', error);
+    res.status(500).send('Error loading projects');
+  }
+});
+
+app.get('/dashboard/projects/:projectName', async (req, res) => {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
+  
+  try {
+    const projectName = decodeURIComponent(req.params.projectName);
+    const projectPath = path.join(USERS_DIR, req.session.user.username, 'projects', projectName);
+    
+    // Security check - ensure project exists and belongs to user
+    try {
+      await fs.access(projectPath);
+    } catch {
+      return res.status(404).send('Project not found');
+    }
+    
+    res.render('project-browser', {
+      title: `${projectName} - AI Context Service`,
+      user: req.session.user,
+      projectName,
+      projectPath: `/dashboard/projects/${encodeURIComponent(projectName)}`
+    });
+    
+  } catch (error) {
+    console.error('Project browser error:', error);
+    res.status(500).send('Error loading project');
+  }
+});
+
+// API route for file tree
+app.get('/api/projects/:projectName/tree', async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  
+  try {
+    const projectName = decodeURIComponent(req.params.projectName);
+    const basePath = path.join(USERS_DIR, req.session.user.username, 'projects', projectName);
+    const requestedPath = req.query.path || '';
+    
+    // Security check - prevent path traversal
+    const fullPath = path.join(basePath, requestedPath);
+    if (!fullPath.startsWith(basePath)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    
+    // Check if path exists
+    try {
+      await fs.access(fullPath);
+    } catch {
+      return res.status(404).json({ error: 'Path not found' });
+    }
+    
+    const buildTree = async (dirPath, relativePath = '') => {
+      const items = [];
+      const entries = await fs.readdir(dirPath, { withFileTypes: true });
+      
+      for (const entry of entries) {
+        const entryPath = path.join(dirPath, entry.name);
+        const entryRelativePath = path.join(relativePath, entry.name).replace(/\\/g, '/');
+        const stats = await fs.stat(entryPath);
+        
+        const item = {
+          name: entry.name,
+          path: entryRelativePath,
+          isDirectory: entry.isDirectory(),
+          size: entry.isFile() ? stats.size : null,
+          modified: stats.mtime
+        };
+        
+        if (entry.isDirectory()) {
+          // Get directory contents count
+          try {
+            const subEntries = await fs.readdir(entryPath);
+            item.childCount = subEntries.length;
+          } catch {
+            item.childCount = 0;
+          }
+        }
+        
+        items.push(item);
+      }
+      
+      // Sort: directories first, then files, both alphabetically
+      return items.sort((a, b) => {
+        if (a.isDirectory && !b.isDirectory) return -1;
+        if (!a.isDirectory && b.isDirectory) return 1;
+        return a.name.localeCompare(b.name);
+      });
+    };
+    
+    const tree = await buildTree(fullPath, requestedPath);
+    res.json({ tree });
+    
+  } catch (error) {
+    console.error('File tree API error:', error);
+    res.status(500).json({ error: 'Error loading file tree' });
+  }
+});
+
+// API route for file content
+app.get('/api/projects/:projectName/file', async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  
+  try {
+    const projectName = decodeURIComponent(req.params.projectName);
+    const basePath = path.join(USERS_DIR, req.session.user.username, 'projects', projectName);
+    const filePath = req.query.path;
+    
+    if (!filePath) {
+      return res.status(400).json({ error: 'File path required' });
+    }
+    
+    // Security check - prevent path traversal
+    const fullPath = path.join(basePath, filePath);
+    if (!fullPath.startsWith(basePath)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    
+    // Check if file exists and is a file
+    const stats = await fs.stat(fullPath);
+    if (!stats.isFile()) {
+      return res.status(400).json({ error: 'Not a file' });
+    }
+    
+    // Check file size (limit to 1MB for web display)
+    if (stats.size > 1024 * 1024) {
+      return res.json({
+        content: null,
+        error: 'File too large to display',
+        size: stats.size,
+        modified: stats.mtime
+      });
+    }
+    
+    // Determine if file is text-based
+    const ext = path.extname(fullPath).toLowerCase();
+    const textExtensions = ['.txt', '.md', '.json', '.js', '.ts', '.py', '.html', '.css', '.xml', '.yaml', '.yml', '.ini', '.conf', '.log'];
+    const isText = textExtensions.includes(ext) || ext === '';
+    
+    if (!isText) {
+      return res.json({
+        content: null,
+        error: 'Binary file - cannot display',
+        size: stats.size,
+        modified: stats.mtime,
+        type: 'binary'
+      });
+    }
+    
+    const content = await fs.readFile(fullPath, 'utf8');
+    
+    res.json({
+      content,
+      size: stats.size,
+      modified: stats.mtime,
+      type: 'text',
+      extension: ext
+    });
+    
+  } catch (error) {
+    console.error('File content API error:', error);
+    if (error.code === 'ENOENT') {
+      res.status(404).json({ error: 'File not found' });
+    } else if (error.code === 'EACCES') {
+      res.status(403).json({ error: 'Access denied' });
+    } else {
+      res.status(500).json({ error: 'Error reading file' });
+    }
+  }
+});
+
+// Debug endpoints removed for production security
+
+// Authenticated MCP endpoint - SECURITY ENHANCED
+// Required format: /mcp/:username/:key
+app.all('/mcp/:username/:key', async (req, res) => {
   console.log(`${req.method} ${req.url}`);
   console.log('Request body:', req.body);
   
-  // Extract username from URL path first, then headers, then default
-  const username = req.params.username || 
-                   req.headers['mcp-username'] || 
-                   req.headers['x-mcp-username'] || 
-                   'default';
+  const { username, key } = req.params;
   
-  console.log(`MCP request for user: ${username}`);
+  // Validate authentication
+  if (!await validateUserMCPKey(username, key)) {
+    console.log(`MCP authentication failed for user: ${username}`);
+    return res.status(401).json({
+      error: 'Invalid authentication credentials',
+      message: 'Check your MCP endpoint URL and key'
+    });
+  }
+  
+  console.log(`Authenticated MCP request for user: ${username}`);
   
   try {
     // Create fresh server instance for this request with user context
@@ -2117,7 +2912,7 @@ async function startServer() {
     
     // Start server
     const httpServer = app.listen(PORT, '0.0.0.0', () => {
-      console.log(`AI Context Service Persistent Tech Proof running on port ${PORT}`);
+      console.log(`AI Context Service Persistent Tech Proof running on port ${PORT} - Testing persistence`);
       console.log(`Health check: http://localhost:${PORT}/health`);
       console.log(`MCP endpoint: http://localhost:${PORT}/mcp`);
       console.log(`Storage: Persistent file system at ${CONTEXT_DATA_DIR}`);
