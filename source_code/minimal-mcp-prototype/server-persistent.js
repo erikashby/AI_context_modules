@@ -2604,6 +2604,243 @@ app.get('/logout', (req, res) => {
   });
 });
 
+// File Browser Routes
+app.get('/dashboard/projects', async (req, res) => {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
+  
+  try {
+    const userProjectsDir = path.join(USERS_DIR, req.session.user.username, 'projects');
+    const projects = [];
+    
+    try {
+      const projectDirs = await fs.readdir(userProjectsDir, { withFileTypes: true });
+      
+      for (const dirent of projectDirs) {
+        if (dirent.isDirectory()) {
+          const projectPath = path.join(userProjectsDir, dirent.name);
+          const stats = await fs.stat(projectPath);
+          
+          // Try to get project description from README or module.json
+          let description = 'No description available';
+          try {
+            const moduleJsonPath = path.join(projectPath, 'module.json');
+            const moduleJson = JSON.parse(await fs.readFile(moduleJsonPath, 'utf8'));
+            description = moduleJson.description || description;
+          } catch {
+            try {
+              const readmePath = path.join(projectPath, 'README.md');
+              const readmeContent = await fs.readFile(readmePath, 'utf8');
+              // Extract first line after title as description
+              const lines = readmeContent.split('\n').filter(line => line.trim());
+              description = lines.length > 1 ? lines[1] : description;
+            } catch {
+              // Keep default description
+            }
+          }
+          
+          projects.push({
+            name: dirent.name,
+            description,
+            modified: stats.mtime,
+            path: `/dashboard/projects/${encodeURIComponent(dirent.name)}`
+          });
+        }
+      }
+    } catch (error) {
+      console.log(`Could not read projects for ${req.session.user.username}:`, error.message);
+    }
+    
+    // Sort by modification date (newest first)
+    projects.sort((a, b) => b.modified - a.modified);
+    
+    res.render('projects', {
+      title: 'Projects - AI Context Service',
+      user: req.session.user,
+      projects
+    });
+    
+  } catch (error) {
+    console.error('Projects page error:', error);
+    res.status(500).send('Error loading projects');
+  }
+});
+
+app.get('/dashboard/projects/:projectName', async (req, res) => {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
+  
+  try {
+    const projectName = decodeURIComponent(req.params.projectName);
+    const projectPath = path.join(USERS_DIR, req.session.user.username, 'projects', projectName);
+    
+    // Security check - ensure project exists and belongs to user
+    try {
+      await fs.access(projectPath);
+    } catch {
+      return res.status(404).send('Project not found');
+    }
+    
+    res.render('project-browser', {
+      title: `${projectName} - AI Context Service`,
+      user: req.session.user,
+      projectName,
+      projectPath: `/dashboard/projects/${encodeURIComponent(projectName)}`
+    });
+    
+  } catch (error) {
+    console.error('Project browser error:', error);
+    res.status(500).send('Error loading project');
+  }
+});
+
+// API route for file tree
+app.get('/api/projects/:projectName/tree', async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  
+  try {
+    const projectName = decodeURIComponent(req.params.projectName);
+    const basePath = path.join(USERS_DIR, req.session.user.username, 'projects', projectName);
+    const requestedPath = req.query.path || '';
+    
+    // Security check - prevent path traversal
+    const fullPath = path.join(basePath, requestedPath);
+    if (!fullPath.startsWith(basePath)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    
+    // Check if path exists
+    try {
+      await fs.access(fullPath);
+    } catch {
+      return res.status(404).json({ error: 'Path not found' });
+    }
+    
+    const buildTree = async (dirPath, relativePath = '') => {
+      const items = [];
+      const entries = await fs.readdir(dirPath, { withFileTypes: true });
+      
+      for (const entry of entries) {
+        const entryPath = path.join(dirPath, entry.name);
+        const entryRelativePath = path.join(relativePath, entry.name).replace(/\\/g, '/');
+        const stats = await fs.stat(entryPath);
+        
+        const item = {
+          name: entry.name,
+          path: entryRelativePath,
+          isDirectory: entry.isDirectory(),
+          size: entry.isFile() ? stats.size : null,
+          modified: stats.mtime
+        };
+        
+        if (entry.isDirectory()) {
+          // Get directory contents count
+          try {
+            const subEntries = await fs.readdir(entryPath);
+            item.childCount = subEntries.length;
+          } catch {
+            item.childCount = 0;
+          }
+        }
+        
+        items.push(item);
+      }
+      
+      // Sort: directories first, then files, both alphabetically
+      return items.sort((a, b) => {
+        if (a.isDirectory && !b.isDirectory) return -1;
+        if (!a.isDirectory && b.isDirectory) return 1;
+        return a.name.localeCompare(b.name);
+      });
+    };
+    
+    const tree = await buildTree(fullPath, requestedPath);
+    res.json({ tree });
+    
+  } catch (error) {
+    console.error('File tree API error:', error);
+    res.status(500).json({ error: 'Error loading file tree' });
+  }
+});
+
+// API route for file content
+app.get('/api/projects/:projectName/file', async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  
+  try {
+    const projectName = decodeURIComponent(req.params.projectName);
+    const basePath = path.join(USERS_DIR, req.session.user.username, 'projects', projectName);
+    const filePath = req.query.path;
+    
+    if (!filePath) {
+      return res.status(400).json({ error: 'File path required' });
+    }
+    
+    // Security check - prevent path traversal
+    const fullPath = path.join(basePath, filePath);
+    if (!fullPath.startsWith(basePath)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    
+    // Check if file exists and is a file
+    const stats = await fs.stat(fullPath);
+    if (!stats.isFile()) {
+      return res.status(400).json({ error: 'Not a file' });
+    }
+    
+    // Check file size (limit to 1MB for web display)
+    if (stats.size > 1024 * 1024) {
+      return res.json({
+        content: null,
+        error: 'File too large to display',
+        size: stats.size,
+        modified: stats.mtime
+      });
+    }
+    
+    // Determine if file is text-based
+    const ext = path.extname(fullPath).toLowerCase();
+    const textExtensions = ['.txt', '.md', '.json', '.js', '.ts', '.py', '.html', '.css', '.xml', '.yaml', '.yml', '.ini', '.conf', '.log'];
+    const isText = textExtensions.includes(ext) || ext === '';
+    
+    if (!isText) {
+      return res.json({
+        content: null,
+        error: 'Binary file - cannot display',
+        size: stats.size,
+        modified: stats.mtime,
+        type: 'binary'
+      });
+    }
+    
+    const content = await fs.readFile(fullPath, 'utf8');
+    
+    res.json({
+      content,
+      size: stats.size,
+      modified: stats.mtime,
+      type: 'text',
+      extension: ext
+    });
+    
+  } catch (error) {
+    console.error('File content API error:', error);
+    if (error.code === 'ENOENT') {
+      res.status(404).json({ error: 'File not found' });
+    } else if (error.code === 'EACCES') {
+      res.status(403).json({ error: 'Access denied' });
+    } else {
+      res.status(500).json({ error: 'Error reading file' });
+    }
+  }
+});
+
 // Debug endpoints removed for production security
 
 // Authenticated MCP endpoint - SECURITY ENHANCED
