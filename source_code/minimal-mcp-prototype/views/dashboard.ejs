@@ -83,11 +83,11 @@
       <div style="background-color: #1f2937; border-radius: 0.5rem; padding: 1.5rem; border: 1px solid #374151;">
         <div style="display: flex; align-items: center; gap: 1rem;">
           <div style="width: 3rem; height: 3rem; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-            <span style="color: white; font-weight: 600; font-size: 1.125rem;"><%= user.projects.length %></span>
+            <span style="color: white; font-weight: 600; font-size: 1.125rem;"><%= user.actualProjectCount || 0 %></span>
           </div>
           <div>
             <h3 style="font-size: 1rem; font-weight: 500; margin: 0;">Active Projects</h3>
-            <p style="color: #9ca3af; font-size: 0.875rem; margin: 0;">Total projects created</p>
+            <p style="color: #9ca3af; font-size: 0.875rem; margin: 0;">Projects in filesystem</p>
           </div>
         </div>
       </div>

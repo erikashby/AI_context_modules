@@ -2514,15 +2514,43 @@ app.post('/login', async (req, res) => {
 });
 
 // Dashboard Route
-app.get('/dashboard', (req, res) => {
+app.get('/dashboard', async (req, res) => {
   if (!req.session.user) {
     return res.redirect('/login');
   }
   
-  res.render('dashboard', {
-    title: 'Dashboard - AI Context Service',
-    user: req.session.user
-  });
+  try {
+    // Get dynamic project count from filesystem (not user profile)
+    const userProjectsDir = path.join(USERS_DIR, req.session.user.username, 'projects');
+    let projectCount = 0;
+    
+    try {
+      const projects = await fs.readdir(userProjectsDir, { withFileTypes: true });
+      projectCount = projects.filter(item => item.isDirectory()).length;
+      console.log(`Dashboard: User ${req.session.user.username} has ${projectCount} projects`);
+    } catch (projectError) {
+      console.log(`Dashboard: Could not count projects for ${req.session.user.username}:`, projectError.message);
+      projectCount = 0;
+    }
+    
+    // Create enhanced user object with dynamic project count
+    const enhancedUser = {
+      ...req.session.user,
+      actualProjectCount: projectCount
+    };
+    
+    res.render('dashboard', {
+      title: 'Dashboard - AI Context Service',
+      user: enhancedUser
+    });
+    
+  } catch (error) {
+    console.error('Dashboard error:', error);
+    res.render('dashboard', {
+      title: 'Dashboard - AI Context Service',
+      user: req.session.user
+    });
+  }
 });
 
 // Key Regeneration Route
