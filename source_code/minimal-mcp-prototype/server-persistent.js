@@ -6,6 +6,7 @@ const express = require('express');
 const cors = require('cors');
 const fs = require('fs').promises;
 const path = require('path');
+const crypto = require('crypto');
 const session = require('express-session');
 const bcrypt = require('bcrypt');
 const ejs = require('ejs');
@@ -28,6 +29,25 @@ const PERSONAL_ORG_DIR = path.join(CONTEXT_DATA_DIR, 'personal-organization');
 // Multi-user paths - Will be set after checking for persistent disk
 let USERS_DIR;
 const MODULES_DIR = path.join(__dirname, 'modules');
+
+// MCP Authentication functions
+function generateMCPKey() {
+  return crypto.randomUUID().replace(/-/g, '').substring(0, 16);
+}
+
+async function validateUserMCPKey(username, providedKey) {
+  try {
+    if (!username || !providedKey) return false;
+    
+    const userProfile = await getUserProfile(username);
+    if (!userProfile || !userProfile.mcpKey) return false;
+    
+    return userProfile.mcpKey === providedKey;
+  } catch (error) {
+    console.error('MCP key validation error:', error);
+    return false;
+  }
+}
 
 // Utility functions for file operations
 async function ensureDirectoryExists(dirPath) {
@@ -137,6 +157,41 @@ async function setupPersistentStorage() {
   }
 }
 
+async function migrateExistingUsers() {
+  try {
+    console.log('Checking for existing users to migrate...');
+    
+    const users = await fs.readdir(USERS_DIR, { withFileTypes: true });
+    
+    for (const userDir of users) {
+      if (userDir.isDirectory()) {
+        const username = userDir.name;
+        const profilePath = path.join(USERS_DIR, username, 'profile', 'user.json');
+        
+        try {
+          const userProfileData = await fs.readFile(profilePath, 'utf8');
+          const userProfile = JSON.parse(userProfileData);
+          
+          // Check if user already has an MCP key
+          if (!userProfile.mcpKey) {
+            userProfile.mcpKey = generateMCPKey();
+            await fs.writeFile(profilePath, JSON.stringify(userProfile, null, 2), 'utf8');
+            console.log(`✅ Added MCP key for existing user: ${username}`);
+          } else {
+            console.log(`✅ User ${username} already has MCP key`);
+          }
+        } catch (profileError) {
+          console.log(`⚠️ Could not migrate user ${username}:`, profileError.message);
+        }
+      }
+    }
+    
+    console.log('User migration completed');
+  } catch (error) {
+    console.error('Error during user migration:', error);
+  }
+}
+
 async function initializeFileSystem() {
   console.log('Initializing file system...');
   
@@ -149,6 +204,9 @@ async function initializeFileSystem() {
   await ensureDirectoryExists(USERS_DIR);
   console.log(`Users directory initialized at: ${USERS_DIR}`);
   console.log(`Users directory is persistent disk: ${USERS_DIR.includes('/var/data') ? 'YES' : 'NO'}`);
+  
+  // Migrate existing users to add MCP keys
+  await migrateExistingUsers();
   
   // Create comprehensive structure (additive - preserves existing files)
   console.log('Ensuring comprehensive organizational structure exists...');
@@ -2240,6 +2298,7 @@ async function createUserDirectory(username, userData) {
       fullName: userData.fullName,
       email: userData.email,
       passwordHash: userData.passwordHash,
+      mcpKey: generateMCPKey(),
       created: new Date().toISOString(),
       lastLogin: null,
       projects: []
@@ -2433,6 +2492,7 @@ app.post('/login', async (req, res) => {
       username: userProfile.username,
       fullName: userProfile.fullName,
       email: userProfile.email,
+      mcpKey: userProfile.mcpKey,
       created: userProfile.created,
       lastLogin: userProfile.lastLogin,
       projects: userProfile.projects
@@ -2463,6 +2523,44 @@ app.get('/dashboard', (req, res) => {
     title: 'Dashboard - AI Context Service',
     user: req.session.user
   });
+});
+
+// Key Regeneration Route
+app.post('/dashboard/regenerate-key', async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  
+  try {
+    const username = req.session.user.username;
+    const newKey = generateMCPKey();
+    
+    // Update user profile
+    const userProfile = await getUserProfile(username);
+    if (!userProfile) {
+      return res.status(404).json({ error: 'User profile not found' });
+    }
+    
+    userProfile.mcpKey = newKey;
+    
+    const profilePath = path.join(USERS_DIR, username, 'profile', 'user.json');
+    await fs.writeFile(profilePath, JSON.stringify(userProfile, null, 2), 'utf8');
+    
+    // Update session
+    req.session.user.mcpKey = newKey;
+    
+    console.log(`MCP key regenerated for user: ${username}`);
+    
+    res.json({
+      success: true,
+      newKey: newKey,
+      mcpEndpoint: `/mcp/${username}/${newKey}`
+    });
+    
+  } catch (error) {
+    console.error('Key regeneration error:', error);
+    res.status(500).json({ error: 'Failed to regenerate key' });
+  }
 });
 
 // Logout Route
@@ -2506,19 +2604,24 @@ app.get('/debug/user/:username', async (req, res) => {
   }
 });
 
-// Stateless MCP endpoint - PRESERVE PROVEN ARCHITECTURE
-// Support both /mcp and /mcp/:username routes
-app.all('/mcp/:username?', async (req, res) => {
+// Authenticated MCP endpoint - SECURITY ENHANCED
+// Required format: /mcp/:username/:key
+app.all('/mcp/:username/:key', async (req, res) => {
   console.log(`${req.method} ${req.url}`);
   console.log('Request body:', req.body);
   
-  // Extract username from URL path first, then headers, then default
-  const username = req.params.username || 
-                   req.headers['mcp-username'] || 
-                   req.headers['x-mcp-username'] || 
-                   'default';
+  const { username, key } = req.params;
   
-  console.log(`MCP request for user: ${username}`);
+  // Validate authentication
+  if (!await validateUserMCPKey(username, key)) {
+    console.log(`MCP authentication failed for user: ${username}`);
+    return res.status(401).json({
+      error: 'Invalid authentication credentials',
+      message: 'Check your MCP endpoint URL and key'
+    });
+  }
+  
+  console.log(`Authenticated MCP request for user: ${username}`);
   
   try {
     // Create fresh server instance for this request with user context

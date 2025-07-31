@@ -29,19 +29,49 @@
         Your personalized AI Context Service is ready. Connect Claude Desktop to your MCP endpoint to get started.
       </p>
       
-      <!-- MCP Endpoint Info -->
+      <!-- MCP Authentication Info -->
       <div style="background-color: #111827; border-radius: 0.375rem; padding: 1rem; border: 1px solid #4b5563;">
-        <h3 style="font-size: 1rem; font-weight: 500; margin-bottom: 0.5rem;">Your MCP Endpoint</h3>
-        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-          <code style="background-color: #374151; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-family: monospace; font-size: 0.875rem; color: #8b5cf6;">
-            /mcp/<%= user.username %>
-          </code>
-          <button onclick="copyToClipboard('/mcp/<%= user.username %>')" style="background-color: #8b5cf6; color: white; padding: 0.25rem 0.5rem; border-radius: 0.25rem; border: none; cursor: pointer; font-size: 0.75rem;">
-            Copy
+        <h3 style="font-size: 1rem; font-weight: 500; margin-bottom: 1rem;">Your MCP Configuration</h3>
+        
+        <!-- API Key Display -->
+        <div style="margin-bottom: 1rem;">
+          <label style="color: #9ca3af; font-size: 0.875rem; margin-bottom: 0.25rem; display: block;">API Key:</label>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <code id="mcp-key-display" style="background-color: #374151; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-family: monospace; font-size: 0.875rem; color: #8b5cf6;">
+              <%= user.mcpKey ? user.mcpKey.substring(0, 4) + '...' + user.mcpKey.substring(12) : 'Not generated' %>
+            </code>
+            <button onclick="toggleKeyVisibility()" style="background-color: #6b7280; color: white; padding: 0.25rem 0.5rem; border-radius: 0.25rem; border: none; cursor: pointer; font-size: 0.75rem;">
+              Show
+            </button>
+            <button onclick="regenerateKey()" style="background-color: #dc2626; color: white; padding: 0.25rem 0.5rem; border-radius: 0.25rem; border: none; cursor: pointer; font-size: 0.75rem;">
+              Regenerate
+            </button>
+          </div>
+        </div>
+        
+        <!-- MCP Endpoint Display -->
+        <div style="margin-bottom: 1rem;">
+          <label style="color: #9ca3af; font-size: 0.875rem; margin-bottom: 0.25rem; display: block;">MCP Endpoint:</label>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <code id="mcp-endpoint" style="background-color: #374151; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-family: monospace; font-size: 0.875rem; color: #8b5cf6; word-break: break-all;">
+              /mcp/<%= user.username %>/<%= user.mcpKey || 'key-here' %>
+            </code>
+            <button onclick="copyEndpoint()" style="background-color: #8b5cf6; color: white; padding: 0.25rem 0.5rem; border-radius: 0.25rem; border: none; cursor: pointer; font-size: 0.75rem;">
+              Copy
+            </button>
+          </div>
+        </div>
+        
+        <!-- Claude Desktop Configuration -->
+        <div>
+          <label style="color: #9ca3af; font-size: 0.875rem; margin-bottom: 0.25rem; display: block;">Claude Desktop Configuration:</label>
+          <button onclick="showClaudeConfig()" style="background-color: #059669; color: white; padding: 0.5rem 1rem; border-radius: 0.25rem; border: none; cursor: pointer; font-size: 0.875rem;">
+            Copy Claude Config
           </button>
         </div>
-        <p style="color: #9ca3af; font-size: 0.875rem;">
-          Add this endpoint to your Claude Desktop MCP configuration to access your personalized context.
+        
+        <p style="color: #9ca3af; font-size: 0.875rem; margin-top: 1rem;">
+          Use this authenticated endpoint in your Claude Desktop MCP configuration for secure access to your personalized context.
         </p>
       </div>
     </div>
@@ -138,16 +168,80 @@ function copyToClipboard(text) {
   });
 }
 
-function showMCPConfig() {
+let keyVisible = false;
+const fullKey = '<%= user.mcpKey || "" %>';
+
+function toggleKeyVisibility() {
+  const keyDisplay = document.getElementById('mcp-key-display');
+  const button = event.target;
+  
+  if (keyVisible) {
+    keyDisplay.textContent = fullKey.substring(0, 4) + '...' + fullKey.substring(12);
+    button.textContent = 'Show';
+    keyVisible = false;
+  } else {
+    keyDisplay.textContent = fullKey;
+    button.textContent = 'Hide';
+    keyVisible = true;
+  }
+}
+
+function copyEndpoint() {
+  const endpoint = document.getElementById('mcp-endpoint').textContent;
+  navigator.clipboard.writeText(endpoint).then(() => {
+    const button = event.target;
+    const originalText = button.textContent;
+    button.textContent = 'Copied!';
+    button.style.backgroundColor = '#059669';
+    setTimeout(() => {
+      button.textContent = originalText;
+      button.style.backgroundColor = '#8b5cf6';
+    }, 2000);
+  });
+}
+
+function showClaudeConfig() {
   const config = `{
   "mcpServers": {
     "ai-context-<%= user.username %>": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-stdio", "https://ai-context-service-private.onrender.com/mcp/<%= user.username %>"]
+      "args": ["-y", "@modelcontextprotocol/server-stdio", "https://ai-context-service-private.onrender.com/mcp/<%= user.username %>/<%= user.mcpKey || 'key-here' %>"]
     }
   }
 }`;
   
-  alert('Claude Desktop MCP Configuration:\\n\\n' + config + '\\n\\nAdd this to your Claude Desktop settings.');
+  navigator.clipboard.writeText(config).then(() => {
+    alert('Claude Desktop MCP Configuration copied to clipboard!\\n\\nPaste this into your Claude Desktop settings.');
+  });
+}
+
+async function regenerateKey() {
+  if (!confirm('Are you sure you want to regenerate your MCP key? This will invalidate your current Claude Desktop configuration.')) {
+    return;
+  }
+  
+  try {
+    const response = await fetch('/dashboard/regenerate-key', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      // Update the display
+      fullKey = data.newKey;
+      document.getElementById('mcp-key-display').textContent = data.newKey.substring(0, 4) + '...' + data.newKey.substring(12);
+      document.getElementById('mcp-endpoint').textContent = data.mcpEndpoint;
+      keyVisible = false;
+      document.querySelector('button[onclick="toggleKeyVisibility()"]').textContent = 'Show';
+      
+      alert('MCP key regenerated successfully! Please update your Claude Desktop configuration with the new endpoint.');
+    } else {
+      alert('Failed to regenerate key. Please try again.');
+    }
+  } catch (error) {
+    alert('Error regenerating key: ' + error.message);
+  }
 }
 </script>
