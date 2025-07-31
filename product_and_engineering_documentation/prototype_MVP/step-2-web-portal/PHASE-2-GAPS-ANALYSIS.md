@@ -157,16 +157,199 @@ Dashboard Sections:
 
 ---
 
+## 🆕 Gap #4: Personal Effectiveness Template UAT Testing
+**Priority**: High  
+**Impact**: Core Functionality & User Experience  
+
+### **Current State**
+- Personal Effectiveness template (`personal-effectiveness-v1`) exists and works
+- Template has comprehensive structure but lacks systematic testing
+- No formal UAT process for template functionality and user workflows
+
+### **Required Solution**
+- **Template UAT Plan**: Systematic testing of all template features
+- **User Workflow Testing**: Complete end-to-end scenarios
+- **Content Validation**: Verify all template files and structure work correctly
+- **AI Integration Testing**: Ensure template works optimally with Claude Desktop
+
+### **UAT Scope**
+```
+Template Testing Areas:
+1. Project Creation - Template instantiation works correctly
+2. Directory Structure - All folders and files created properly  
+3. File Content - Templates contain useful, actionable content
+4. AI Instructions - AI guidance files work as intended
+5. Planning Workflow - Hierarchical planning system functions
+6. Navigation - All MCP tools work with template structure
+7. User Experience - Template supports real productivity workflows
+```
+
+### **Success Criteria**
+- All template directories and files create correctly
+- Content is useful and actionable for productivity
+- AI instructions guide Claude effectively
+- Users can complete real planning workflows
+- No missing files or broken template elements
+
+---
+
+## 🆕 Gap #5: Additional Project Templates
+**Priority**: Medium  
+**Impact**: User Choice & Platform Scalability
+
+### **Current State**
+- Only one template available: `personal-effectiveness-v1`
+- Limited user choice and use case coverage
+- Template system proven but needs expansion
+
+### **Required Solution**  
+Add **4 additional project templates** to provide user choice and cover different use cases.
+
+### **Proposed Templates**
+```
+1. work-project-management-v1
+   - Professional project tracking
+   - Team collaboration structure
+   - Deliverable and milestone management
+
+2. creative-portfolio-v1  
+   - Creative project organization
+   - Portfolio and showcase structure
+   - Inspiration and reference management
+
+3. learning-knowledge-v1
+   - Study and research organization
+   - Note-taking and knowledge base
+   - Progress tracking and reviews
+
+4. health-wellness-v1
+   - Health goal tracking
+   - Habit formation and monitoring
+   - Wellness planning and reflection
+```
+
+### **Implementation Scope**
+```
+For Each Template:
+- module.json with metadata and features
+- Complete directory structure
+- AI_instructions/ with template-specific guidance
+- Sample content and README files
+- Template-specific planning structures
+- Integration with existing MCP tools
+```
+
+### **Technical Considerations**
+- Templates must work with existing `create_project` tool
+- Each needs unique `module_id` and structure
+- AI instructions should be template-optimized
+- Must integrate with current MCP navigation tools
+
+---
+
+## 🚨 Gap #6: Remove Debug Endpoints (SECURITY CRITICAL)
+**Priority**: HIGH - SECURITY RISK  
+**Impact**: Production Security & Data Privacy  
+
+### **Current State**
+- Debug endpoints exist in production that expose sensitive user information
+- These endpoints were useful during development but pose security risks in production
+- No authentication required for debug endpoints
+
+### **Security Risks Identified**
+
+**Debug Endpoint**: `/debug/user/:username`
+```javascript
+// RISK: Exposes user profile data without authentication
+app.get('/debug/user/:username', async (req, res) => {
+  try {
+    const { username } = req.params;
+    const userProfile = await getUserProfile(username);
+    // Returns user data to anyone with username
+```
+
+**Potential Exposures:**
+- User profile information (name, email, creation date)  
+- User directory structure
+- Project lists and metadata
+- System internal information
+- Error messages with file paths
+
+### **Required Solution**
+**IMMEDIATE**: Remove or secure all debug endpoints before production use
+
+### **Implementation Options**
+
+**Option A: Complete Removal** (Recommended)
+```javascript
+// Remove these routes entirely:
+// app.get('/debug/user/:username', ...)
+// Any other /debug/* endpoints
+```
+
+**Option B: Authentication Required**
+```javascript
+// Require admin authentication for debug access
+app.get('/debug/user/:username', requireAdminAuth, async (req, res) => {
+  // Only authenticated admins can access
+```
+
+**Option C: Environment-Based**
+```javascript
+// Only enable in development, disable in production
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/debug/user/:username', ...)
+}
+```
+
+### **Recommended Fix**
+**Option A (Complete Removal)** - Debug endpoints should not exist in production systems.
+
+### **Files Affected**
+- `server-persistent.js` - Remove debug endpoint routes
+- Any documentation referencing debug endpoints
+
+### **Security Impact**
+- **HIGH**: User data exposure without authentication
+- **MEDIUM**: System information disclosure
+- **COMPLIANCE**: Privacy violation risk
+
+---
+
 ## 🤔 Decision Required
 
+**Updated Gap Analysis - 6 Total Gaps:**
+
 **Question for Erik:**
-1. Do you agree with this gap analysis?
-2. Should we complete Gaps #1 & #2 before Phase 2 sign-off?
-3. Should Gap #3 (File Browser) be Phase 3 or a separate initiative?
-4. Any other gaps or priorities we're missing?
+1. ✅ **Gap #1 (MCP Keys)**: COMPLETED
+2. ✅ **Gap #2 (Dashboard Enhancement)**: COMPLETED  
+3. **Gap #3 (File Browser)**: Phase 3 or separate initiative?
+4. **Gap #4 (Template UAT)**: Include in Phase 2 completion? 
+5. **Gap #5 (Additional Templates)**: Phase 3 or separate initiative?
+6. 🚨 **Gap #6 (Remove Debug Endpoints)**: SECURITY CRITICAL - Fix immediately?
+
+**Updated Prioritization:**
+```
+IMMEDIATE - SECURITY CRITICAL:
+🚨 Gap #6: Remove Debug Endpoints (SECURITY RISK)
+
+Phase 2 Completion Blockers:
+✅ Gap #1: MCP Authentication (DONE)
+✅ Gap #2: Dashboard Enhancement (DONE)
+🧪 Gap #4: Template UAT Testing (HIGH)
+
+Phase 3 / Future:
+📁 Gap #3: File Browser (MEDIUM - significant scope)
+📋 Gap #5: Additional Templates (MEDIUM - expand choice)
+```
+
+**Rationale**: 
+- Dashboard enhancement is user-facing critical
+- Template UAT ensures core functionality works
+- File browser and additional templates are valuable but not blocking
 
 **Next Steps:**
-- [ ] Erik approval of gap analysis
-- [ ] Prioritize gap resolution approach  
-- [ ] Begin implementation of approved gaps
-- [ ] Update Phase 2 completion criteria
+- [ ] Erik approval of updated gap analysis
+- [ ] Confirm Phase 2 completion criteria (Gaps #2 & #4?)
+- [ ] Begin implementation of approved Phase 2 gaps
+- [ ] Plan Phase 3 roadmap (Gaps #3 & #5)

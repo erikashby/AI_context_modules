@@ -2604,33 +2604,7 @@ app.get('/logout', (req, res) => {
   });
 });
 
-// Debug endpoint to check if user exists
-app.get('/debug/user/:username', async (req, res) => {
-  try {
-    const { username } = req.params;
-    const userProfile = await getUserProfile(username);
-    
-    if (userProfile) {
-      res.json({
-        exists: true,
-        username: userProfile.username,
-        fullName: userProfile.fullName,
-        email: userProfile.email,
-        created: userProfile.created,
-        projects: userProfile.projects || []
-      });
-    } else {
-      res.json({
-        exists: false,
-        username: username
-      });
-    }
-  } catch (error) {
-    res.status(500).json({
-      error: error.message
-    });
-  }
-});
+// Debug endpoints removed for production security
 
 // Authenticated MCP endpoint - SECURITY ENHANCED
 // Required format: /mcp/:username/:key
