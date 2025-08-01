@@ -2244,7 +2244,7 @@ app.get('/health', (req, res) => {
 // Root endpoint - Home page
 app.get('/', (req, res) => {
   res.render('home', { 
-    title: 'AI Context Service - Personal Effectiveness Intelligence',
+    title: 'Magic Context - Personal Effectiveness Intelligence',
     user: req.session.user || null
   });
 });
@@ -2252,7 +2252,7 @@ app.get('/', (req, res) => {
 // API info endpoint (moved to /api for JSON responses)
 app.get('/api', (req, res) => {
   res.json({
-    service: 'AI Context Service - Persistent Tech Proof',
+    service: 'Magic Context - Persistent Tech Proof',
     version: '2.3.0',
     transport: 'StreamableHTTP-Stateless',
     endpoints: {
@@ -2268,7 +2268,7 @@ app.get('/api', (req, res) => {
 // Getting Started guide endpoint
 app.get('/getting-started', (req, res) => {
   res.render('getting-started', { 
-    title: 'Getting Started - AI Context Service',
+    title: 'Getting Started - Magic Context',
     user: req.session.user || null
   });
 });
