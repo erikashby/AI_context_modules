@@ -893,6 +893,28 @@ async function handleCreateProject(username, projectName, moduleId) {
   }
 }
 
+async function handleCreateProjectFromGitHub(username, projectName, githubUrl) {
+  try {
+    // Use the GitHub integration function we added earlier
+    const result = await createProjectFromGitHub(username, projectName, githubUrl);
+    
+    return {
+      content: [{ 
+        type: 'text', 
+        text: `✅ Project '${projectName}' created for ${username} from GitHub repository: ${githubUrl}`
+      }]
+    };
+  } catch (error) {
+    return {
+      content: [{ 
+        type: 'text', 
+        text: `Error creating project from GitHub: ${error.message}` 
+      }],
+      isError: true
+    };
+  }
+}
+
 async function handleReadFile(username, projectId, filePath) {
   try {
     const fullPath = await getUserFilePath(username, projectId, filePath);
@@ -956,14 +978,19 @@ function createServerForUser(username) {
         },
         {
           name: 'create_project',
-          description: 'Create new project from module template',
+          description: 'Create new project from module template or GitHub repository',
           inputSchema: {
             type: 'object',
             properties: {
               project_name: { type: 'string', description: 'Name for the new project' },
-              module_id: { type: 'string', description: 'Module template ID (e.g., personal-effectiveness-v1)' }
+              module_id: { type: 'string', description: 'Module template ID (e.g., personal-effectiveness-v1)' },
+              github_url: { type: 'string', description: 'GitHub repository URL (alternative to module_id, e.g., https://github.com/user/repo)' }
             },
-            required: ['project_name', 'module_id']
+            required: ['project_name'],
+            oneOf: [
+              { required: ['module_id'] },
+              { required: ['github_url'] }
+            ]
           }
         },
         {
@@ -1115,7 +1142,11 @@ function createServerForUser(username) {
           return await handleListModules();
           
         case 'create_project':
-          return await handleCreateProject(username, args.project_name, args.module_id);
+          if (args.github_url) {
+            return await handleCreateProjectFromGitHub(username, args.project_name, args.github_url);
+          } else {
+            return await handleCreateProject(username, args.project_name, args.module_id);
+          }
           
         case 'read_file':
           return await handleReadFile(username, args.project_id, args.file_path);
@@ -2272,6 +2303,191 @@ app.get('/getting-started', (req, res) => {
     user: req.session.user || null
   });
 });
+
+// GitHub Integration Functions
+async function parseGitHubUrl(githubUrl) {
+  const match = githubUrl.match(/github\.com\/([^\/]+)\/([^\/]+)(?:\.git)?(?:\/.*)?$/);
+  if (!match) {
+    throw new Error('Invalid GitHub URL format. Expected: https://github.com/owner/repo');
+  }
+  return { owner: match[1], repo: match[2] };
+}
+
+async function fetchGitHubRepoContents(owner, repo, path = '') {
+  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+  console.log(`Fetching GitHub contents: ${apiUrl}`);
+  
+  try {
+    const response = await fetch(apiUrl, {
+      headers: {
+        'User-Agent': 'Magic-Context-Service',
+        'Accept': 'application/vnd.github+json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
+    }
+    
+    const items = await response.json();
+    const moduleContent = {};
+    
+    // Handle both single file and array of files/folders
+    const itemsArray = Array.isArray(items) ? items : [items];
+    
+    for (const item of itemsArray) {
+      if (item.type === 'file') {
+        // Fetch file content
+        try {
+          const fileResponse = await fetch(item.download_url);
+          if (fileResponse.ok) {
+            const content = await fileResponse.text();
+            const filePath = path ? `${path}/${item.name}` : item.name;
+            moduleContent[filePath] = content;
+          }
+        } catch (fileError) {
+          console.warn(`Failed to fetch file ${item.name}:`, fileError.message);
+        }
+      } else if (item.type === 'dir') {
+        // Recursively fetch directory contents
+        try {
+          const subPath = path ? `${path}/${item.name}` : item.name;
+          const subContent = await fetchGitHubRepoContents(owner, repo, subPath);
+          Object.assign(moduleContent, subContent);
+        } catch (dirError) {
+          console.warn(`Failed to fetch directory ${item.name}:`, dirError.message);
+        }
+      }
+    }
+    
+    return moduleContent;
+  } catch (error) {
+    console.error(`GitHub API fetch failed:`, error);
+    throw new Error(`Failed to fetch from GitHub: ${error.message}`);
+  }
+}
+
+async function validateGitHubModule(moduleContent) {
+  const validation = {
+    isValid: true,
+    errors: [],
+    warnings: []
+  };
+  
+  // Check for basic module structure
+  const files = Object.keys(moduleContent);
+  
+  // Check for required files
+  if (!files.some(f => f === 'module.json' || f.endsWith('/module.json'))) {
+    validation.warnings.push('No module.json found - using basic module structure');
+  }
+  
+  if (!files.some(f => f === 'README.md' || f.endsWith('/README.md'))) {
+    validation.warnings.push('No README.md found');
+  }
+  
+  // Check for AI instructions
+  if (!files.some(f => f.includes('AI_instructions'))) {
+    validation.warnings.push('No AI_instructions folder found');
+  }
+  
+  // Basic security check - no executable files
+  const dangerousExtensions = ['.exe', '.bat', '.sh', '.py', '.js', '.ts'];
+  const dangerousFiles = files.filter(f => 
+    dangerousExtensions.some(ext => f.toLowerCase().endsWith(ext))
+  );
+  
+  if (dangerousFiles.length > 0) {
+    validation.errors.push(`Contains potentially unsafe files: ${dangerousFiles.join(', ')}`);
+    validation.isValid = false;
+  }
+  
+  // File count limit
+  if (files.length > 100) {
+    validation.errors.push('Module contains too many files (limit: 100)');
+    validation.isValid = false;
+  }
+  
+  return validation;
+}
+
+async function createProjectFromGitHub(username, projectName, githubUrl) {
+  console.log(`Creating project '${projectName}' for user '${username}' from GitHub: ${githubUrl}`);
+  
+  try {
+    // Parse GitHub URL
+    const { owner, repo } = await parseGitHubUrl(githubUrl);
+    console.log(`Parsed GitHub URL: ${owner}/${repo}`);
+    
+    // Fetch repository contents
+    const moduleContent = await fetchGitHubRepoContents(owner, repo);
+    console.log(`Fetched ${Object.keys(moduleContent).length} files from GitHub`);
+    
+    // Validate module content
+    const validation = await validateGitHubModule(moduleContent);
+    if (!validation.isValid) {
+      throw new Error(`Invalid module: ${validation.errors.join(', ')}`);
+    }
+    
+    // Create project directory structure
+    const userProjectsDir = path.join(USERS_DIR, username, 'projects');
+    const projectDir = path.join(userProjectsDir, projectName);
+    
+    await fs.ensureDir(projectDir);
+    console.log(`Created project directory: ${projectDir}`);
+    
+    // Copy all files to project directory
+    for (const [filePath, content] of Object.entries(moduleContent)) {
+      const fullPath = path.join(projectDir, filePath);
+      await fs.ensureDir(path.dirname(fullPath));
+      await fs.writeFile(fullPath, content, 'utf8');
+    }
+    
+    console.log(`Copied ${Object.keys(moduleContent).length} files to project`);
+    
+    // Update user's projects list
+    await updateUserProjectsList(username, projectName, {
+      name: projectName,
+      source: 'github',
+      githubUrl: githubUrl,
+      owner: owner,
+      repo: repo,
+      createdAt: new Date().toISOString()
+    });
+    
+    return {
+      success: true,
+      message: `Created project '${projectName}' from GitHub repository ${owner}/${repo}`,
+      warnings: validation.warnings,
+      filesCount: Object.keys(moduleContent).length
+    };
+    
+  } catch (error) {
+    console.error(`Failed to create project from GitHub:`, error);
+    throw error;
+  }
+}
+
+async function updateUserProjectsList(username, projectName, projectInfo) {
+  try {
+    const userDir = path.join(USERS_DIR, username);
+    const projectsListFile = path.join(userDir, 'projects_list.json');
+    
+    let projectsList = {};
+    if (await fs.pathExists(projectsListFile)) {
+      const data = await fs.readFile(projectsListFile, 'utf8');
+      projectsList = JSON.parse(data);
+    }
+    
+    projectsList[projectName] = projectInfo;
+    
+    await fs.writeFile(projectsListFile, JSON.stringify(projectsList, null, 2));
+    console.log(`Updated projects list for user ${username}`);
+  } catch (error) {
+    console.warn(`Failed to update projects list:`, error);
+    // Don't throw - project creation should succeed even if list update fails
+  }
+}
 
 // User Management Functions
 async function createUserDirectory(username, userData) {
