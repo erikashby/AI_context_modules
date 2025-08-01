@@ -3068,6 +3068,80 @@ app.get('/api/projects/:projectName/file', async (req, res) => {
   }
 });
 
+// Save file content API
+app.put('/api/projects/:projectName/file', async (req, res) => {
+  if (!req.session.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  
+  try {
+    const projectName = decodeURIComponent(req.params.projectName);
+    const basePath = path.join(USERS_DIR, req.session.user.username, 'projects', projectName);
+    const filePath = req.body.path;
+    const content = req.body.content;
+    
+    if (!filePath) {
+      return res.status(400).json({ error: 'File path required' });
+    }
+    
+    if (content === undefined || content === null) {
+      return res.status(400).json({ error: 'File content required' });
+    }
+    
+    // Security check - prevent path traversal
+    const fullPath = path.join(basePath, filePath);
+    if (!fullPath.startsWith(basePath)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    
+    // Determine if file is text-based (same logic as GET endpoint)
+    const ext = path.extname(fullPath).toLowerCase();
+    const textExtensions = ['.txt', '.md', '.json', '.js', '.ts', '.py', '.html', '.css', '.xml', '.yaml', '.yml', '.ini', '.conf', '.log'];
+    const isText = textExtensions.includes(ext) || ext === '';
+    
+    if (!isText) {
+      return res.status(400).json({ error: 'Only text files can be edited' });
+    }
+    
+    // Create backup of existing file if it exists
+    try {
+      await fs.access(fullPath);
+      const backupPath = `${fullPath}.backup.${Date.now()}`;
+      await fs.copyFile(fullPath, backupPath);
+      console.log(`Created backup: ${backupPath}`);
+    } catch (error) {
+      // File doesn't exist, no backup needed
+    }
+    
+    // Ensure directory exists
+    await fs.mkdir(path.dirname(fullPath), { recursive: true });
+    
+    // Write the file
+    await fs.writeFile(fullPath, content, 'utf8');
+    
+    // Get updated file stats
+    const stats = await fs.stat(fullPath);
+    
+    res.json({
+      success: true,
+      message: 'File saved successfully',
+      size: stats.size,
+      modified: stats.mtime,
+      path: filePath
+    });
+    
+  } catch (error) {
+    console.error('File save API error:', error);
+    if (error.code === 'EACCES') {
+      res.status(403).json({ error: 'Access denied' });
+    } else if (error.code === 'ENOSPC') {
+      res.status(507).json({ error: 'Insufficient storage space' });
+    } else {
+      res.status(500).json({ error: 'Error saving file' });
+    }
+  }
+});
+
 // Debug endpoints removed for production security
 
 // Authenticated MCP endpoint - SECURITY ENHANCED
