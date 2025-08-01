@@ -2433,13 +2433,13 @@ async function createProjectFromGitHub(username, projectName, githubUrl) {
     const userProjectsDir = path.join(USERS_DIR, username, 'projects');
     const projectDir = path.join(userProjectsDir, projectName);
     
-    await fs.ensureDir(projectDir);
+    await fs.mkdir(projectDir, { recursive: true });
     console.log(`Created project directory: ${projectDir}`);
     
     // Copy all files to project directory
     for (const [filePath, content] of Object.entries(moduleContent)) {
       const fullPath = path.join(projectDir, filePath);
-      await fs.ensureDir(path.dirname(fullPath));
+      await fs.mkdir(path.dirname(fullPath), { recursive: true });
       await fs.writeFile(fullPath, content, 'utf8');
     }
     
@@ -2474,9 +2474,12 @@ async function updateUserProjectsList(username, projectName, projectInfo) {
     const projectsListFile = path.join(userDir, 'projects_list.json');
     
     let projectsList = {};
-    if (await fs.pathExists(projectsListFile)) {
+    try {
+      await fs.access(projectsListFile);
       const data = await fs.readFile(projectsListFile, 'utf8');
       projectsList = JSON.parse(data);
+    } catch (error) {
+      // File doesn't exist, start with empty object
     }
     
     projectsList[projectName] = projectInfo;
