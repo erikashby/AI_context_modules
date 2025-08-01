@@ -17,27 +17,129 @@
         Your AI assistant finally knows your life. Never explain context again - get intelligent, personalized responses instantly.
       </p>
       
-      <!-- The Magic Moment -->
-      <div style="background: linear-gradient(135deg, #4c1d95 0%, #1e3a8a 100%); border-radius: 1rem; padding: 3rem 2rem; margin-bottom: 3rem; max-width: 64rem; margin-left: auto; margin-right: auto;">
-        <h2 style="font-size: 1.75rem; font-weight: bold; margin-bottom: 2rem; color: white; text-align: center;">🎭 The "Magic Moment"</h2>
+      <!-- The Magic Moment Carousel -->
+      <div style="background: linear-gradient(135deg, #4c1d95 0%, #1e3a8a 100%); border-radius: 1rem; padding: 3rem 2rem; margin-bottom: 3rem; max-width: 64rem; margin-left: auto; margin-right: auto; position: relative; overflow: hidden;" id="magic-moment-carousel">
+        <h2 style="font-size: 1.75rem; font-weight: bold; margin-bottom: 2rem; color: white; text-align: center;">🎭 The "Magic Moments"</h2>
         
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 2rem;">
-          <div>
-            <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #ef4444;">❌ Before Magic Context</h3>
-            <div style="background-color: rgba(31, 41, 55, 0.8); border-radius: 0.5rem; padding: 1.25rem;">
-              <p style="color: #d1d5db; font-size: 0.875rem; margin-bottom: 0.5rem;"><strong>User:</strong> "I'm a consultant working on three client projects. I have a presentation due Friday, a budget analysis for next week, and I'm feeling overwhelmed with competing priorities. My energy is usually best in the morning, I prefer focused work blocks, and I have meetings Tuesday and Thursday. What should I focus on today?"</p>
+        <!-- Carousel Container -->
+        <div style="position: relative; overflow: hidden; border-radius: 0.5rem;">
+          <div id="carousel-track" style="display: flex; transition: transform 0.5s ease-in-out; width: 400%;">
+            
+            <!-- Magic Moment #1: Work Productivity -->
+            <div style="width: 25%; flex-shrink: 0; padding: 0 1rem;">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                <div>
+                  <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #ef4444;">❌ Before Magic Context</h3>
+                  <div style="background-color: rgba(31, 41, 55, 0.8); border-radius: 0.5rem; padding: 1.25rem; min-height: 120px;">
+                    <p style="color: #d1d5db; font-size: 0.8rem; line-height: 1.4;"><strong>User:</strong> "I'm a consultant working on three client projects. I have a presentation due Friday, a budget analysis for next week, and I'm feeling overwhelmed with competing priorities. My energy is usually best in the morning, I prefer focused work blocks, and I have meetings Tuesday and Thursday. What should I focus on today?"</p>
+                  </div>
+                </div>
+                <div>
+                  <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #10b981;">✅ After Magic Context</h3>
+                  <div style="background-color: rgba(31, 41, 55, 0.8); border-radius: 0.5rem; padding: 1.25rem; min-height: 120px;">
+                    <p style="color: #d1d5db; font-size: 0.8rem; margin-bottom: 0.5rem; line-height: 1.4;"><strong>User:</strong> "What should I focus on today?"</p>
+                    <p style="color: #9ca3af; font-size: 0.8rem; line-height: 1.4;"><strong>Claude:</strong> "Based on your current projects and energy patterns, I recommend using this morning's high-energy window for the Johnson presentation since it's due Friday..."</p>
+                  </div>
+                </div>
+              </div>
+              <div style="text-align: center;">
+                <div style="display: inline-flex; align-items: center; background: rgba(251, 191, 36, 0.2); padding: 0.5rem 1rem; border-radius: 2rem; border: 1px solid #fbbf24;">
+                  <span style="font-size: 1.5rem; margin-right: 0.5rem;">🎯</span>
+                  <span style="font-size: 0.9rem; font-weight: 600; color: #fbbf24;">Work Productivity</span>
+                </div>
+              </div>
             </div>
-          </div>
-          <div>
-            <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #10b981;">✅ After Magic Context</h3>
-            <div style="background-color: rgba(31, 41, 55, 0.8); border-radius: 0.5rem; padding: 1.25rem;">
-              <p style="color: #d1d5db; font-size: 0.875rem; margin-bottom: 0.5rem;"><strong>User:</strong> "What should I focus on today?"</p>
-              <p style="color: #9ca3af; font-size: 0.875rem;"><strong>Claude:</strong> "Based on your current projects and energy patterns, I recommend using this morning's high-energy window for the Johnson presentation since it's due Friday..."</p>
+
+            <!-- Magic Moment #2: Dinner Planning -->
+            <div style="width: 25%; flex-shrink: 0; padding: 0 1rem;">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                <div>
+                  <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #ef4444;">❌ Before Magic Context</h3>
+                  <div style="background-color: rgba(31, 41, 55, 0.8); border-radius: 0.5rem; padding: 1.25rem; min-height: 120px;">
+                    <p style="color: #d1d5db; font-size: 0.8rem; line-height: 1.4;"><strong>User:</strong> "I need dinner ideas but I'm not sure what to make. My family likes Asian food, especially stir-fries. I'm trying to increase my fiber intake and stay within my calorie goals. I have about 45 minutes to cook and prefer something with vegetables. We have chicken in the fridge. What should I make?"</p>
+                  </div>
+                </div>
+                <div>
+                  <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #10b981;">✅ After Magic Context</h3>
+                  <div style="background-color: rgba(31, 41, 55, 0.8); border-radius: 0.5rem; padding: 1.25rem; min-height: 120px;">
+                    <p style="color: #d1d5db; font-size: 0.8rem; margin-bottom: 0.5rem; line-height: 1.4;"><strong>User:</strong> "Hey, I need help with dinner."</p>
+                    <p style="color: #9ca3af; font-size: 0.8rem; line-height: 1.4;"><strong>Claude:</strong> "You should still have chicken left from your grocery run. How about a chicken and vegetable stir-fry? It'll give you the high fiber you're looking for and fits perfectly in your calorie range..."</p>
+                  </div>
+                </div>
+              </div>
+              <div style="text-align: center;">
+                <div style="display: inline-flex; align-items: center; background: rgba(251, 191, 36, 0.2); padding: 0.5rem 1rem; border-radius: 2rem; border: 1px solid #fbbf24;">
+                  <span style="font-size: 1.5rem; margin-right: 0.5rem;">🍽️</span>
+                  <span style="font-size: 0.9rem; font-weight: 600; color: #fbbf24;">Dinner Planning</span>
+                </div>
+              </div>
             </div>
+
+            <!-- Magic Moment #3: Client Presentation -->
+            <div style="width: 25%; flex-shrink: 0; padding: 0 1rem;">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                <div>
+                  <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #ef4444;">❌ Before Magic Context</h3>
+                  <div style="background-color: rgba(31, 41, 55, 0.8); border-radius: 0.5rem; padding: 1.25rem; min-height: 120px;">
+                    <p style="color: #d1d5db; font-size: 0.8rem; line-height: 1.4;"><strong>User:</strong> "I need to create a presentation for Johnson Corp about our CloudSync Pro software. They're a 500-person manufacturing company currently using legacy file sharing. They care about security, integration with their ERP system, and cost savings. Our product offers 256-bit encryption, seamless ERP integration, and typically reduces IT costs by 30%. I need to structure this to address their specific pain points and show ROI. What should I focus on?"</p>
+                  </div>
+                </div>
+                <div>
+                  <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #10b981;">✅ After Magic Context</h3>
+                  <div style="background-color: rgba(31, 41, 55, 0.8); border-radius: 0.5rem; padding: 1.25rem; min-height: 120px;">
+                    <p style="color: #d1d5db; font-size: 0.8rem; margin-bottom: 0.5rem; line-height: 1.4;"><strong>User:</strong> "Help me build a presentation for Johnson Corp."</p>
+                    <p style="color: #9ca3af; font-size: 0.8rem; line-height: 1.4;"><strong>Claude:</strong> "Based on the notes from the last 2 meetings, security was important. You were designing an update to the security feature - perhaps you should start with that in the presentation..."</p>
+                  </div>
+                </div>
+              </div>
+              <div style="text-align: center;">
+                <div style="display: inline-flex; align-items: center; background: rgba(251, 191, 36, 0.2); padding: 0.5rem 1rem; border-radius: 2rem; border: 1px solid #fbbf24;">
+                  <span style="font-size: 1.5rem; margin-right: 0.5rem;">📊</span>
+                  <span style="font-size: 0.9rem; font-weight: 600; color: #fbbf24;">Client Presentation</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Magic Moment #4: Learning & Education -->
+            <div style="width: 25%; flex-shrink: 0; padding: 0 1rem;">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                <div>
+                  <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #ef4444;">❌ Before Magic Context</h3>
+                  <div style="background-color: rgba(31, 41, 55, 0.8); border-radius: 0.5rem; padding: 1.25rem; min-height: 120px;">
+                    <p style="color: #d1d5db; font-size: 0.8rem; line-height: 1.4;"><strong>User:</strong> "I just finished Lesson 1 of my JavaScript course which covered variables and basic syntax. I think I'm ready to move on to Lesson 2 about functions, but I want to make sure I have a solid foundation first. Should I review anything from Lesson 1? What specific topics should I focus on before starting functions? Also, I struggled a bit with variable scope - should I spend more time on that? What's the best way to approach Lesson 2 to make sure I understand it properly?"</p>
+                  </div>
+                </div>
+                <div>
+                  <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: #10b981;">✅ After Magic Context</h3>
+                  <div style="background-color: rgba(31, 41, 55, 0.8); border-radius: 0.5rem; padding: 1.25rem; min-height: 120px;">
+                    <p style="color: #d1d5db; font-size: 0.8rem; margin-bottom: 0.5rem; line-height: 1.4;"><strong>User:</strong> "Hey, let's get back to studying..."</p>
+                    <p style="color: #9ca3af; font-size: 0.8rem; line-height: 1.4;"><strong>Claude:</strong> "Since you mentioned struggling with variable scope in Lesson 1, let's do a quick review of let, const, and var before diving into functions. I've prepared 3 practice exercises to solidify that concept first..."</p>
+                  </div>
+                </div>
+              </div>
+              <div style="text-align: center;">
+                <div style="display: inline-flex; align-items: center; background: rgba(251, 191, 36, 0.2); padding: 0.5rem 1rem; border-radius: 2rem; border: 1px solid #fbbf24;">
+                  <span style="font-size: 1.5rem; margin-right: 0.5rem;">📚</span>
+                  <span style="font-size: 0.9rem; font-weight: 600; color: #fbbf24;">Learning & Education</span>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
         
-        <div style="text-align: center; margin-bottom: 1rem;">
+        <!-- Navigation Dots -->
+        <div style="text-align: center; margin-top: 2rem;">
+          <div id="carousel-dots" style="display: inline-flex; gap: 0.5rem;">
+            <button class="carousel-dot active" data-slide="0" style="width: 12px; height: 12px; border-radius: 50%; border: none; background: #fbbf24; cursor: pointer; transition: all 0.3s;"></button>
+            <button class="carousel-dot" data-slide="1" style="width: 12px; height: 12px; border-radius: 50%; border: none; background: rgba(255,255,255,0.4); cursor: pointer; transition: all 0.3s;"></button>
+            <button class="carousel-dot" data-slide="2" style="width: 12px; height: 12px; border-radius: 50%; border: none; background: rgba(255,255,255,0.4); cursor: pointer; transition: all 0.3s;"></button>
+            <button class="carousel-dot" data-slide="3" style="width: 12px; height: 12px; border-radius: 50%; border: none; background: rgba(255,255,255,0.4); cursor: pointer; transition: all 0.3s;"></button>
+          </div>
+        </div>
+        
+        <!-- Overall tagline -->
+        <div style="text-align: center; margin-top: 2rem;">
           <p style="font-size: 1rem; font-weight: 600; color: #fbbf24;">The Difference: No context rebuilding, instant intelligent recommendations!</p>
         </div>
       </div>
@@ -117,3 +219,105 @@
     </div>
   </footer>
 </div>
+
+<script>
+(function() {
+  const track = document.getElementById('carousel-track');
+  const dots = document.querySelectorAll('.carousel-dot');
+  const carousel = document.getElementById('magic-moment-carousel');
+  let currentSlide = 0;
+  let autoRotateInterval;
+  let isPaused = false;
+  
+  function goToSlide(slideIndex) {
+    currentSlide = slideIndex;
+    const translateX = -(slideIndex * 25); // 25% per slide since width is 25%
+    track.style.transform = `translateX(${translateX}%)`;
+    
+    // Update dots
+    dots.forEach((dot, index) => {
+      if (index === slideIndex) {
+        dot.style.background = '#fbbf24';
+        dot.classList.add('active');
+      } else {
+        dot.style.background = 'rgba(255,255,255,0.4)';
+        dot.classList.remove('active');
+      }
+    });
+  }
+  
+  function nextSlide() {
+    if (isPaused) return;
+    currentSlide = (currentSlide + 1) % 4;
+    goToSlide(currentSlide);
+  }
+  
+  function startAutoRotate() {
+    autoRotateInterval = setInterval(nextSlide, 5000); // 5 seconds
+  }
+  
+  function stopAutoRotate() {
+    if (autoRotateInterval) {
+      clearInterval(autoRotateInterval);
+    }
+  }
+  
+  // Manual dot controls
+  dots.forEach((dot, index) => {
+    dot.addEventListener('click', () => {
+      goToSlide(index);
+      stopAutoRotate();
+      setTimeout(startAutoRotate, 10000); // Restart auto-rotate after 10 seconds
+    });
+  });
+  
+  // Pause on hover
+  carousel.addEventListener('mouseenter', () => {
+    isPaused = true;
+  });
+  
+  carousel.addEventListener('mouseleave', () => {
+    isPaused = false;
+  });
+  
+  // Touch/swipe support for mobile
+  let startX = 0;
+  let isDragging = false;
+  
+  carousel.addEventListener('touchstart', (e) => {
+    startX = e.touches[0].clientX;
+    isDragging = true;
+    isPaused = true;
+  });
+  
+  carousel.addEventListener('touchmove', (e) => {
+    if (!isDragging) return;
+    e.preventDefault();
+  });
+  
+  carousel.addEventListener('touchend', (e) => {
+    if (!isDragging) return;
+    isDragging = false;
+    isPaused = false;
+    
+    const endX = e.changedTouches[0].clientX;
+    const diffX = startX - endX;
+    
+    if (Math.abs(diffX) > 50) { // Minimum swipe distance
+      if (diffX > 0) {
+        // Swipe left - next slide
+        currentSlide = (currentSlide + 1) % 4;
+      } else {
+        // Swipe right - previous slide
+        currentSlide = (currentSlide - 1 + 4) % 4;
+      }
+      goToSlide(currentSlide);
+      stopAutoRotate();
+      setTimeout(startAutoRotate, 10000);
+    }
+  });
+  
+  // Start the carousel
+  startAutoRotate();
+})();
+</script>
