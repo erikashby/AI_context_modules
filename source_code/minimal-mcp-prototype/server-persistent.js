@@ -2265,6 +2265,14 @@ app.get('/api', (req, res) => {
   });
 });
 
+// Getting Started guide endpoint
+app.get('/getting-started', (req, res) => {
+  res.render('getting-started', { 
+    title: 'Getting Started - AI Context Service',
+    user: req.session.user || null
+  });
+});
+
 // User Management Functions
 async function createUserDirectory(username, userData) {
   try {

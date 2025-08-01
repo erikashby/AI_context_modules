@@ -1,0 +1,265 @@
+<%- include('layout', { body: `
+<div class="min-h-screen bg-gray-900 text-white">
+  <!-- Header -->
+  <div class="bg-gray-800 border-b border-gray-700">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center py-6">
+        <div class="flex items-center">
+          <a href="/" class="text-2xl font-bold hero-gradient bg-clip-text text-transparent">
+            AI Context Service
+          </a>
+        </div>
+        <div class="flex items-center space-x-4">
+          <a href="/login" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+            Sign In
+          </a>
+          <a href="/signup" class="hero-gradient text-white px-4 py-2 rounded-md text-sm font-medium hover:opacity-90">
+            Get Started
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <!-- Hero Section -->
+    <div class="text-center mb-16">
+      <div class="w-24 h-24 hero-gradient rounded-full mx-auto mb-8 flex items-center justify-center">
+        <div class="w-12 h-12 bg-white rounded-full"></div>
+      </div>
+      <h1 class="text-4xl font-bold mb-6">Getting Started Guide</h1>
+      <p class="text-xl text-gray-300 max-w-3xl mx-auto">
+        Transform your AI conversations from "explain your situation every time" to "get intelligent assistance immediately" with persistent, structured context.
+      </p>
+    </div>
+
+    <!-- Quick Start -->
+    <div class="bg-gray-800 rounded-lg p-8 mb-12">
+      <h2 class="text-2xl font-bold mb-6 flex items-center">
+        <span class="hero-gradient text-white p-2 rounded-lg mr-3">🚀</span>
+        Quick Start (5 Minutes)
+      </h2>
+      
+      <div class="grid md:grid-cols-3 gap-6 mb-8">
+        <div class="text-center">
+          <div class="w-12 h-12 hero-gradient rounded-full mx-auto mb-4 flex items-center justify-content-center text-white font-bold">1</div>
+          <h3 class="font-semibold mb-2">Create Account</h3>
+          <p class="text-gray-400 text-sm">Sign up with email and get your personal MCP endpoint</p>
+        </div>
+        <div class="text-center">
+          <div class="w-12 h-12 hero-gradient rounded-full mx-auto mb-4 flex items-center justify-content-center text-white font-bold">2</div>
+          <h3 class="font-semibold mb-2">Connect Claude</h3>
+          <p class="text-gray-400 text-sm">Add your MCP endpoint to Claude Desktop settings</p>
+        </div>
+        <div class="text-center">
+          <div class="w-12 h-12 hero-gradient rounded-full mx-auto mb-4 flex items-center justify-content-center text-white font-bold">3</div>
+          <h3 class="font-semibold mb-2">Create Project</h3>
+          <p class="text-gray-400 text-sm">Choose from Personal Effectiveness or D&D Character Development</p>
+        </div>
+      </div>
+
+      <div class="text-center">
+        <a href="/signup" class="hero-gradient text-white px-8 py-3 rounded-lg font-semibold hover:opacity-90 inline-block">
+          Start Now →
+        </a>
+      </div>
+    </div>
+
+    <!-- Step-by-Step Guide -->
+    <div class="space-y-12">
+      
+      <!-- Step 1: Create Account -->
+      <div class="bg-gray-800 rounded-lg p-8">
+        <h2 class="text-2xl font-bold mb-6">📝 Step 1: Create Your Account</h2>
+        
+        <div class="mb-6">
+          <h3 class="text-lg font-semibold mb-3 text-purple-400">Web Portal Signup</h3>
+          <ol class="list-decimal list-inside space-y-2 text-gray-300 ml-4">
+            <li><strong>Visit:</strong> <a href="/" class="text-purple-400 hover:text-purple-300">https://ai-context-service-private.onrender.com</a></li>
+            <li>Click <strong>"Sign Up"</strong></li>
+            <li>Fill in your email, password, and username</li>
+            <li>Click <strong>"Create Account"</strong></li>
+          </ol>
+        </div>
+
+        <div class="bg-green-900 border border-green-700 rounded-lg p-4">
+          <p class="text-green-300"><strong>✅ Success:</strong> You now have your personal context service!</p>
+        </div>
+      </div>
+
+      <!-- Step 2: Connect Claude -->
+      <div class="bg-gray-800 rounded-lg p-8">
+        <h2 class="text-2xl font-bold mb-6">🔗 Step 2: Connect Claude Desktop</h2>
+        
+        <div class="mb-6">
+          <h3 class="text-lg font-semibold mb-3 text-purple-400">Get Your MCP Endpoint</h3>
+          <ol class="list-decimal list-inside space-y-2 text-gray-300 ml-4">
+            <li>Log into your account on the web portal</li>
+            <li>Go to <strong>Dashboard</strong></li>
+            <li>Copy your personal MCP URL: <code class="bg-gray-700 px-2 py-1 rounded text-sm">https://ai-context-service-private.onrender.com/mcp/{your-username}</code></li>
+          </ol>
+        </div>
+
+        <div class="mb-6">
+          <h3 class="text-lg font-semibold mb-3 text-purple-400">Configure Claude Desktop</h3>
+          <ol class="list-decimal list-inside space-y-2 text-gray-300 ml-4">
+            <li>Open <strong>Claude Desktop</strong></li>
+            <li>Go to <strong>Settings</strong> (gear icon)</li>
+            <li>Click <strong>"MCP Servers"</strong></li>
+            <li>Add New Server:
+              <ul class="list-disc list-inside ml-4 mt-2 space-y-1">
+                <li><strong>Name:</strong> AI Context Service</li>
+                <li><strong>URL:</strong> {your-personal-endpoint-from-above}</li>
+                <li><strong>Type:</strong> HTTP</li>
+              </ul>
+            </li>
+            <li><strong>Save Configuration</strong></li>
+            <li><strong>Restart Claude Desktop</strong></li>
+          </ol>
+        </div>
+
+        <div class="bg-green-900 border border-green-700 rounded-lg p-4">
+          <p class="text-green-300"><strong>✅ Success:</strong> Claude can now access your context!</p>
+        </div>
+      </div>
+
+      <!-- Step 3: Create Projects -->
+      <div class="bg-gray-800 rounded-lg p-8">
+        <h2 class="text-2xl font-bold mb-6">🎯 Step 3: Create Your First Project</h2>
+        
+        <div class="grid md:grid-cols-2 gap-8">
+          <div class="border border-gray-700 rounded-lg p-6">
+            <h3 class="text-lg font-semibold mb-3 text-purple-400">Option A: Personal Effectiveness</h3>
+            <p class="text-gray-300 mb-4"><strong>Perfect for:</strong> Knowledge workers, consultants, executives, entrepreneurs</p>
+            
+            <ol class="list-decimal list-inside space-y-2 text-gray-300 text-sm mb-4">
+              <li>In web portal, click <strong>"Create Project"</strong></li>
+              <li>Select: <code class="bg-gray-700 px-2 py-1 rounded">Personal Effectiveness Intelligence</code></li>
+              <li>Project Name: <code class="bg-gray-700 px-2 py-1 rounded">my-effectiveness</code></li>
+              <li>Click <strong>"Create Project"</strong></li>
+            </ol>
+
+            <div class="bg-blue-900 border border-blue-700 rounded-lg p-3">
+              <p class="text-blue-300 text-sm"><strong>What you get:</strong> AI that understands your work patterns, intelligent planning, overwhelm management, time optimization</p>
+            </div>
+          </div>
+
+          <div class="border border-gray-700 rounded-lg p-6">
+            <h3 class="text-lg font-semibold mb-3 text-purple-400">Option B: D&D Character Development</h3>
+            <p class="text-gray-300 mb-4"><strong>Perfect for:</strong> Tabletop RPG players, game masters, D&D enthusiasts</p>
+            
+            <ol class="list-decimal list-inside space-y-2 text-gray-300 text-sm mb-4">
+              <li>In web portal, click <strong>"Create Project"</strong></li>
+              <li>Select: <code class="bg-gray-700 px-2 py-1 rounded">D&D Character Development Assistant</code></li>
+              <li>Project Name: <code class="bg-gray-700 px-2 py-1 rounded">my-dnd-characters</code></li>
+              <li>Click <strong>"Create Project"</strong></li>
+            </ol>
+
+            <div class="bg-blue-900 border border-blue-700 rounded-lg p-3">
+              <p class="text-blue-300 text-sm"><strong>What you get:</strong> Step-by-step character creation, complete D&D 5E rules, character storage, Minecraft D&D integration</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4: Test the Magic -->
+      <div class="bg-gray-800 rounded-lg p-8">
+        <h2 class="text-2xl font-bold mb-6">✨ Step 4: Experience the Magic</h2>
+        
+        <div class="mb-6">
+          <h3 class="text-lg font-semibold mb-3 text-purple-400">Test Your Setup</h3>
+          <ol class="list-decimal list-inside space-y-2 text-gray-300 ml-4">
+            <li>Open <strong>Claude Desktop</strong></li>
+            <li>Start a new conversation</li>
+            <li>Type: <code class="bg-gray-700 px-2 py-1 rounded">"What projects do I have available?"</code></li>
+          </ol>
+          <p class="text-green-300 mt-3"><strong>Expected:</strong> Claude will list your projects using your personal context service.</p>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6">
+          <div>
+            <h3 class="text-lg font-semibold mb-3 text-purple-400">For Personal Effectiveness:</h3>
+            <ul class="space-y-2 text-gray-300 text-sm">
+              <li><code class="bg-gray-700 px-2 py-1 rounded">"What should I focus on today?"</code></li>
+              <li><code class="bg-gray-700 px-2 py-1 rounded">"Help me plan my week for maximum effectiveness"</code></li>
+              <li><code class="bg-gray-700 px-2 py-1 rounded">"I'm feeling overwhelmed - help me prioritize"</code></li>
+            </ul>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold mb-3 text-purple-400">For D&D Characters:</h3>
+            <ul class="space-y-2 text-gray-300 text-sm">
+              <li><code class="bg-gray-700 px-2 py-1 rounded">"Help me create a new D&D character"</code></li>
+              <li><code class="bg-gray-700 px-2 py-1 rounded">"What are my current D&D characters?"</code></li>
+              <li><code class="bg-gray-700 px-2 py-1 rounded">"Guide me through character creation step by step"</code></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- The Magic Moment -->
+      <div class="bg-gradient-to-r from-purple-900 to-blue-900 rounded-lg p-8">
+        <h2 class="text-2xl font-bold mb-6">🎭 The "Magic Moment"</h2>
+        
+        <div class="grid md:grid-cols-2 gap-8">
+          <div>
+            <h3 class="text-lg font-semibold mb-3 text-red-400">❌ Before AI Context Service</h3>
+            <div class="bg-gray-800 rounded-lg p-4">
+              <p class="text-gray-300 text-sm mb-2"><strong>User:</strong> "I'm a consultant working on three client projects. I have a presentation due Friday, a budget analysis for next week, and I'm feeling overwhelmed with competing priorities. My energy is usually best in the morning, I prefer focused work blocks, and I have meetings Tuesday and Thursday. What should I focus on today?"</p>
+            </div>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold mb-3 text-green-400">✅ After AI Context Service</h3>
+            <div class="bg-gray-800 rounded-lg p-4">
+              <p class="text-gray-300 text-sm mb-2"><strong>User:</strong> "What should I focus on today?"</p>
+              <p class="text-gray-400 text-sm"><strong>Claude:</strong> "Based on your current projects and energy patterns, I recommend using this morning's high-energy window for the Johnson presentation since it's due Friday..."</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="text-center mt-6">
+          <p class="text-lg font-semibold text-yellow-400">The Difference: No context rebuilding, instant intelligent recommendations!</p>
+        </div>
+      </div>
+
+      <!-- Troubleshooting -->
+      <div class="bg-gray-800 rounded-lg p-8">
+        <h2 class="text-2xl font-bold mb-6">🔧 Need Help?</h2>
+        
+        <div class="grid md:grid-cols-2 gap-6">
+          <div>
+            <h3 class="text-lg font-semibold mb-3 text-purple-400">Common Issues</h3>
+            <ul class="space-y-3 text-gray-300 text-sm">
+              <li><strong>Claude not connecting?</strong> Verify your MCP URL and restart Claude Desktop</li>
+              <li><strong>No projects showing?</strong> Create a project first via web portal</li>
+              <li><strong>Server errors?</strong> Check URL format and username spelling</li>
+            </ul>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold mb-3 text-purple-400">Support</h3>
+            <ul class="space-y-3 text-gray-300 text-sm">
+              <li><strong>Documentation:</strong> Check project README files</li>
+              <li><strong>GitHub Issues:</strong> Report bugs or request features</li>
+              <li><strong>Email Support:</strong> Contact for technical assistance</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- CTA Footer -->
+    <div class="text-center mt-16 mb-8">
+      <h2 class="text-3xl font-bold mb-6">Ready to Transform Your AI Experience?</h2>
+      <div class="space-x-4">
+        <a href="/signup" class="hero-gradient text-white px-8 py-3 rounded-lg font-semibold hover:opacity-90 inline-block">
+          Get Started Now
+        </a>
+        <a href="/" class="border border-gray-600 text-gray-300 px-8 py-3 rounded-lg font-semibold hover:bg-gray-800 inline-block">
+          Learn More
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+` }) %>
