@@ -1169,7 +1169,15 @@ function createServerForUser(username) {
     
     console.log(`[TOOL-${toolRequestId}] Tool '${name}' called for user '${username}'`);
     
-    try {
+    // Add timeout for individual tools - longer for GitHub operations
+    const isGithubOperation = name === 'create_project' && args.github_url;
+    const TOOL_TIMEOUT = isGithubOperation ? 30000 : 15000; // 30s for GitHub, 15s for others
+    const toolTimeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Tool execution timeout')), TOOL_TIMEOUT);
+    });
+    
+    const executeToolPromise = (async () => {
+      try {
       switch (name) {
         case 'list_projects':
           return await handleListProjects(username);
@@ -1179,6 +1187,8 @@ function createServerForUser(username) {
           
         case 'create_project':
           if (args.github_url) {
+            // GitHub project creation is slow - provide immediate feedback
+            console.log(`[TOOL-${toolRequestId}] Starting GitHub project creation (this may take 10-20 seconds)`);
             return await handleCreateProjectFromGitHub(username, args.project_name, args.github_url);
           } else {
             return await handleCreateProject(username, args.project_name, args.module_id);
@@ -1538,16 +1548,32 @@ function createServerForUser(username) {
         default:
           throw new Error(`Unknown tool: ${name}`);
       }
-    } catch (error) {
-      const toolTime = Date.now() - toolStartTime;
-      console.log(`[TOOL-${toolRequestId}] Tool '${name}' ERROR after ${toolTime}ms: ${error.message}`);
-      return {
-        content: [{ type: 'text', text: `Error: ${error.message}` }],
-        isError: true
-      };
-    } finally {
+      } catch (error) {
+        throw error; // Re-throw to be caught by outer handler
+      }
+    })();
+
+    try {
+      // Race between tool execution and timeout
+      const result = await Promise.race([executeToolPromise, toolTimeoutPromise]);
       const toolTime = Date.now() - toolStartTime;
       console.log(`[TOOL-${toolRequestId}] Tool '${name}' completed in ${toolTime}ms`);
+      return result;
+    } catch (error) {
+      const toolTime = Date.now() - toolStartTime;
+      if (error.message === 'Tool execution timeout') {
+        console.log(`[TOOL-${toolRequestId}] Tool '${name}' TIMEOUT after ${toolTime}ms`);
+        return {
+          content: [{ type: 'text', text: `Tool '${name}' timed out after ${TOOL_TIMEOUT/1000} seconds. This operation is taking longer than expected, please try again or try a simpler request.` }],
+          isError: true
+        };
+      } else {
+        console.log(`[TOOL-${toolRequestId}] Tool '${name}' ERROR after ${toolTime}ms: ${error.message}`);
+        return {
+          content: [{ type: 'text', text: `Error: ${error.message}` }],
+          isError: true
+        };
+      }
     }
   });
 
