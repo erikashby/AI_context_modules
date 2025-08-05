@@ -30,6 +30,38 @@ const PERSONAL_ORG_DIR = path.join(CONTEXT_DATA_DIR, 'personal-organization');
 let USERS_DIR;
 const MODULES_DIR = path.join(__dirname, 'modules');
 
+// Simple file cache to reduce filesystem operations
+const fileCache = new Map();
+const CACHE_TTL = 30000; // 30 seconds
+
+function getCacheKey(filePath) {
+  return `file:${filePath}`;
+}
+
+async function getCachedFile(filePath) {
+  const key = getCacheKey(filePath);
+  const cached = fileCache.get(key);
+  
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    console.log(`Cache HIT for ${filePath}`);
+    return cached.content;
+  }
+  
+  console.log(`Cache MISS for ${filePath}`);
+  const content = await fs.readFile(filePath, 'utf8');
+  fileCache.set(key, {
+    content,
+    timestamp: Date.now()
+  });
+  
+  return content;
+}
+
+function clearFileCache() {
+  fileCache.clear();
+  console.log('File cache cleared');
+}
+
 // MCP Authentication functions
 function generateMCPKey() {
   return crypto.randomUUID().replace(/-/g, '').substring(0, 16);
@@ -918,7 +950,7 @@ async function handleCreateProjectFromGitHub(username, projectName, githubUrl) {
 async function handleReadFile(username, projectId, filePath) {
   try {
     const fullPath = await getUserFilePath(username, projectId, filePath);
-    const content = await fs.readFile(fullPath, 'utf8');
+    const content = await getCachedFile(fullPath);
     
     return {
       content: [{ 
@@ -1131,7 +1163,11 @@ function createServerForUser(username) {
 
   // Handle tool calls with user context
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    const toolStartTime = Date.now();
+    const toolRequestId = Math.random().toString(36).substring(7);
     const { name, arguments: args } = request.params;
+    
+    console.log(`[TOOL-${toolRequestId}] Tool '${name}' called for user '${username}'`);
     
     try {
       switch (name) {
@@ -1161,7 +1197,7 @@ function createServerForUser(username) {
           for (const filePath of filePaths) {
             try {
               const userFilePath = await getUserFilePath(username, args.project_id, filePath);
-              const content = await fs.readFile(userFilePath, 'utf8');
+              const content = await getCachedFile(userFilePath);
               results.push({
                 file_path: filePath,
                 success: true,
@@ -1208,7 +1244,7 @@ function createServerForUser(username) {
             for (const filePath of keyFiles) {
               try {
                 const userFilePath = await getUserFilePath(username, args.project_id, filePath);
-                const content = await fs.readFile(userFilePath, 'utf8');
+                const content = await getCachedFile(userFilePath);
                 overview.key_files[filePath] = content;
               } catch (error) {
                 overview.key_files[filePath] = `Error: ${error.message}`;
@@ -1240,7 +1276,7 @@ function createServerForUser(username) {
           for (const filePath of contextFiles) {
             try {
               const userFilePath = await getUserFilePath(username, args.project_id, filePath);
-              const content = await fs.readFile(userFilePath, 'utf8');
+              const content = await getCachedFile(userFilePath);
               currentContext.context[filePath] = content;
             } catch (error) {
               currentContext.context[filePath] = `Error: ${error.message}`;
@@ -1503,10 +1539,15 @@ function createServerForUser(username) {
           throw new Error(`Unknown tool: ${name}`);
       }
     } catch (error) {
+      const toolTime = Date.now() - toolStartTime;
+      console.log(`[TOOL-${toolRequestId}] Tool '${name}' ERROR after ${toolTime}ms: ${error.message}`);
       return {
         content: [{ type: 'text', text: `Error: ${error.message}` }],
         isError: true
       };
+    } finally {
+      const toolTime = Date.now() - toolStartTime;
+      console.log(`[TOOL-${toolRequestId}] Tool '${name}' completed in ${toolTime}ms`);
     }
   });
 
@@ -2055,7 +2096,7 @@ function createServer() {
           for (const filePath of filePaths) {
             try {
               const userFilePath = await getUserFilePath(username, args.project_id, filePath);
-              const content = await fs.readFile(userFilePath, 'utf8');
+              const content = await getCachedFile(userFilePath);
               results.push({
                 file_path: filePath,
                 success: true,
@@ -2102,7 +2143,7 @@ function createServer() {
             for (const filePath of keyFiles) {
               try {
                 const userFilePath = await getUserFilePath(username, args.project_id, filePath);
-                const content = await fs.readFile(userFilePath, 'utf8');
+                const content = await getCachedFile(userFilePath);
                 overview.key_files[filePath] = content;
               } catch (error) {
                 overview.key_files[filePath] = `Error: ${error.message}`;
@@ -2134,7 +2175,7 @@ function createServer() {
           for (const filePath of contextFiles) {
             try {
               const userFilePath = await getUserFilePath(username, args.project_id, filePath);
-              const content = await fs.readFile(userFilePath, 'utf8');
+              const content = await getCachedFile(userFilePath);
               currentContext.context[filePath] = content;
             } catch (error) {
               currentContext.context[filePath] = `Error: ${error.message}`;
@@ -3147,52 +3188,93 @@ app.put('/api/projects/:projectName/file', async (req, res) => {
 // Authenticated MCP endpoint - SECURITY ENHANCED
 // Required format: /mcp/:username/:key
 app.all('/mcp/:username/:key', async (req, res) => {
-  console.log(`${req.method} ${req.url}`);
-  console.log('Request body:', req.body);
+  const requestStartTime = Date.now();
+  const requestId = Math.random().toString(36).substring(7);
+  
+  console.log(`[${requestId}] ${req.method} ${req.url} - Request started`);
+  console.log(`[${requestId}] Request body:`, req.body);
   
   const { username, key } = req.params;
   
   // Validate authentication
+  const authStartTime = Date.now();
   if (!await validateUserMCPKey(username, key)) {
-    console.log(`MCP authentication failed for user: ${username}`);
+    console.log(`[${requestId}] MCP authentication failed for user: ${username}`);
     return res.status(401).json({
       error: 'Invalid authentication credentials',
       message: 'Check your MCP endpoint URL and key'
     });
   }
+  console.log(`[${requestId}] Authentication took: ${Date.now() - authStartTime}ms`);
   
-  console.log(`Authenticated MCP request for user: ${username}`);
+  console.log(`[${requestId}] Authenticated MCP request for user: ${username}`);
   
   try {
     // Create fresh server instance for this request with user context
+    const serverStartTime = Date.now();
     const server = createServerForUser(username);
+    console.log(`[${requestId}] Server creation took: ${Date.now() - serverStartTime}ms`);
     
     // Create stateless transport (sessionIdGenerator: undefined)
+    const transportStartTime = Date.now();
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: undefined // Stateless mode - CRITICAL SUCCESS FACTOR
     });
+    console.log(`[${requestId}] Transport creation took: ${Date.now() - transportStartTime}ms`);
 
     // Handle cleanup on request close
     res.on('close', () => {
-      console.log('Request closed - cleaning up');
+      const totalTime = Date.now() - requestStartTime;
+      console.log(`[${requestId}] Request closed - cleaning up (Total time: ${totalTime}ms)`);
       transport.close();
       server.close();
     });
 
     // Connect server to transport
+    const connectStartTime = Date.now();
     await server.connect(transport);
-    console.log('Fresh server/transport created and connected');
+    console.log(`[${requestId}] Server connect took: ${Date.now() - connectStartTime}ms`);
+    console.log(`[${requestId}] Fresh server/transport created and connected`);
     
-    // Handle the request
-    if (req.method === 'POST') {
-      await transport.handleRequest(req, res, req.body);
-    } else {
-      await transport.handleRequest(req, res);
+    // Handle the request with timeout
+    const handleStartTime = Date.now();
+    const REQUEST_TIMEOUT = 25000; // 25 seconds
+    
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Request timeout')), REQUEST_TIMEOUT);
+    });
+    
+    const handleRequestPromise = req.method === 'POST' 
+      ? transport.handleRequest(req, res, req.body)
+      : transport.handleRequest(req, res);
+    
+    try {
+      await Promise.race([handleRequestPromise, timeoutPromise]);
+      const handleTime = Date.now() - handleStartTime;
+      const totalTime = Date.now() - requestStartTime;
+      console.log(`[${requestId}] Request handling took: ${handleTime}ms`);
+      console.log(`[${requestId}] Total request time: ${totalTime}ms`);
+    } catch (error) {
+      if (error.message === 'Request timeout') {
+        console.log(`[${requestId}] Request timed out after ${REQUEST_TIMEOUT}ms`);
+        if (!res.headersSent) {
+          res.status(408).json({
+            jsonrpc: '2.0',
+            error: {
+              code: -32001,
+              message: 'Request timed out - operation taking longer than expected',
+            },
+            id: null,
+          });
+        }
+        return;
+      }
+      throw error; // Re-throw other errors
     }
-    console.log('Request handled by stateless transport');
     
   } catch (error) {
-    console.error('Stateless MCP error:', error);
+    const totalTime = Date.now() - requestStartTime;
+    console.error(`[${requestId}] Stateless MCP error (after ${totalTime}ms):`, error);
     if (!res.headersSent) {
       res.status(500).json({
         jsonrpc: '2.0',

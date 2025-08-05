@@ -248,15 +248,27 @@ Projects in the projects list page consistently show "No description available" 
 
 ## 📊 Bug Summary
 
-**Total Bugs Found**: 4  
-**High Severity**: 2  
-**Medium Severity**: 2  
-**Low Severity**: 0  
+**Total Bugs Found**: 15  
+**Critical Severity**: 2  
+**High Severity**: 1  
+**Medium-High Severity**: 1  
+**Medium Severity**: 6  
+**Low-Medium Severity**: 1  
+**Low Severity**: 4  
+
+**Security Bugs**: 10 (Bugs #5-#14)  
+**Functional Bugs**: 5 (Bugs #1-#4, #15)  
 
 **Resolution Status**:
-- 🔍 **Identified**: 3
+- 🚨 **Critical/Urgent**: 3 (Bugs #5, #6, #15)
+- 🔍 **Identified**: 11
 - 🔧 **In Progress**: 0  
 - ✅ **Fixed**: 1
+
+**Most Critical Issues Requiring Immediate Attention**:
+1. **Bug #15**: MCP Request Timeout (CRITICAL) - Core functionality broken
+2. **Bug #5**: Path Traversal Vulnerability (CRITICAL) - Security risk
+3. **Bug #6**: Weak Session Secret (HIGH) - Security risk
 
 ---
 
@@ -347,3 +359,472 @@ The service is currently branded as "AI Context Service" throughout the applicat
 - **Technical references**: 1 hour
 - **Testing and validation**: 1 hour
 - **Total**: 5-7 hours
+
+---
+
+## 🔒 Bug #5: Path Traversal Vulnerability (CRITICAL SECURITY)
+
+**Severity**: Critical  
+**Status**: 🚨 **IDENTIFIED - URGENT**  
+**Found During**: Engineering Manager Security Review  
+**Date**: August 5, 2025  
+
+### **Issue Description**
+Critical path traversal vulnerability in file path sanitization allows users to access files outside their authorized directories.
+
+### **Location**
+`server-auth-protected.js:80`
+```javascript
+const sanitizedPath = filePath.replace(/^\/+|\/+$/g, '').replace(/\.\./g, '');
+```
+
+### **Vulnerability Details**
+The current sanitization only removes `..` patterns but can be bypassed with:
+- Encoded sequences: `%2e%2e`, `%2e%2e%2f`
+- Nested patterns: `....//`, `..../`
+- Unicode variations
+- Double encoding
+
+### **Impact**
+**CRITICAL**: Attackers could read/write files outside user directories, potentially accessing:
+- Other users' data
+- System configuration files
+- Authentication keys
+- Source code
+
+### **Recommended Fix**
+Replace with proper path validation:
+```javascript
+const resolvedPath = path.resolve(PERSONAL_ORG_DIR, sanitizedPath);
+if (!resolvedPath.startsWith(path.resolve(PERSONAL_ORG_DIR))) {
+    throw new Error('Invalid file path');
+}
+```
+
+---
+
+## 🔒 Bug #6: Weak Session Secret (HIGH SECURITY)
+
+**Severity**: High  
+**Status**: 🚨 **IDENTIFIED - URGENT**  
+**Found During**: Engineering Manager Security Review  
+**Date**: August 5, 2025  
+
+### **Issue Description**
+Predictable fallback session secret in production enables session hijacking.
+
+### **Location**
+`server-persistent.js:2251`
+```javascript
+secret: process.env.SESSION_SECRET || 'ai-context-service-dev-secret-change-in-production'
+```
+
+### **Vulnerability Details**
+If `SESSION_SECRET` environment variable is not set, the application uses a hardcoded, predictable secret that enables trivial session hijacking.
+
+### **Impact**
+**HIGH**: Complete account takeover through session manipulation.
+
+### **Recommended Fix**
+Force environment variable requirement in production:
+```javascript
+secret: process.env.SESSION_SECRET || (() => {
+    if (process.env.NODE_ENV === 'production') {
+        throw new Error('SESSION_SECRET must be set in production');
+    }
+    return crypto.randomBytes(32).toString('hex');
+})()
+```
+
+---
+
+## 🔒 Bug #7: Insufficient MCP Key Entropy (MEDIUM SECURITY)
+
+**Severity**: Medium-High  
+**Status**: 🔍 **IDENTIFIED**  
+**Found During**: Engineering Manager Security Review  
+**Date**: August 5, 2025  
+
+### **Issue Description**
+MCP authentication keys use only 16 characters, reducing security against brute force attacks.
+
+### **Location**
+`server-persistent.js:35`
+```javascript
+return crypto.randomUUID().replace(/-/g, '').substring(0, 16);
+```
+
+### **Vulnerability Details**
+- Only 16 hex characters = 64 bits of entropy
+- Modern standards recommend 128+ bits for API keys
+- Makes brute force attacks more feasible
+
+### **Impact**
+**MEDIUM-HIGH**: MCP authentication could be compromised through brute force.
+
+### **Recommended Fix**
+Increase entropy to industry standard:
+```javascript
+return crypto.randomBytes(32).toString('hex'); // 256 bits
+```
+
+---
+
+## 🔒 Bug #8: Cookie Security Configuration (MEDIUM SECURITY)
+
+**Severity**: Medium  
+**Status**: 🔍 **IDENTIFIED**  
+**Found During**: Engineering Manager Security Review  
+**Date**: August 5, 2025  
+
+### **Issue Description**
+Session cookies configured to transmit over HTTP even in production.
+
+### **Location**
+`server-persistent.js:2255`
+```javascript
+secure: false, // Temporarily disable for debugging
+```
+
+### **Vulnerability Details**
+- `secure: false` allows cookies over HTTP
+- Enables session hijacking over insecure connections
+- Comment suggests temporary setting but may persist to production
+
+### **Impact**
+**MEDIUM**: Session hijacking over unencrypted connections.
+
+### **Recommended Fix**
+Use environment-based conditional:
+```javascript
+secure: process.env.NODE_ENV === 'production',
+```
+
+---
+
+## 🔧 Bug #9: Race Conditions in Multi-User File Operations
+
+**Severity**: Medium  
+**Status**: 🔍 **IDENTIFIED**  
+**Found During**: Engineering Manager Security Review  
+**Date**: August 5, 2025  
+
+### **Issue Description**
+No file locking mechanism for concurrent user operations leads to potential data corruption.
+
+### **Vulnerability Details**
+- Multiple users can modify projects simultaneously
+- No atomic operations for file writes
+- Race conditions in project creation/deletion
+- Concurrent modifications can corrupt data
+
+### **Impact**
+**MEDIUM**: Data corruption when multiple users access system simultaneously.
+
+### **Recommended Fix**
+Implement file locking or atomic operations:
+```javascript
+const lockfile = require('proper-lockfile');
+// Use lockfile.lock() before file operations
+```
+
+---
+
+## 🔧 Bug #10: Missing Input Validation
+
+**Severity**: Medium  
+**Status**: 🔍 **IDENTIFIED**  
+**Found During**: Engineering Manager Security Review  
+**Date**: August 5, 2025  
+
+### **Issue Description**
+Insufficient validation on user inputs across multiple endpoints.
+
+### **Vulnerability Details**
+- Username validation only checks existence, not format
+- Project names lack proper sanitization
+- File content not validated before writing
+- No length limits on inputs
+
+### **Impact**
+**MEDIUM**: Various injection attacks and system instability.
+
+### **Recommended Fix**
+Implement comprehensive input validation with whitelisting approach.
+
+---
+
+## 🔧 Bug #11: Missing Rate Limiting
+
+**Severity**: Medium  
+**Status**: 🔍 **IDENTIFIED**  
+**Found During**: Engineering Manager Security Review  
+**Date**: August 5, 2025  
+
+### **Issue Description**
+No rate limiting on authentication endpoints despite having `express-rate-limit` dependency.
+
+### **Vulnerability Details**
+- Login endpoints accept unlimited attempts
+- MCP endpoints lack rate limiting
+- Enables brute force attacks
+- No protection against DoS attacks
+
+### **Impact**
+**MEDIUM**: Brute force attacks on authentication, service disruption.
+
+### **Recommended Fix**
+Implement rate limiting on sensitive endpoints:
+```javascript
+const rateLimit = require('express-rate-limit');
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each IP to 5 requests per windowMs
+  skipSuccessfulRequests: true
+});
+app.use('/login', authLimiter);
+```
+
+---
+
+## 🔧 Bug #12: Information Disclosure in Error Messages
+
+**Severity**: Low-Medium  
+**Status**: 🔍 **IDENTIFIED**  
+**Found During**: Engineering Manager Security Review  
+**Date**: August 5, 2025  
+
+### **Issue Description**
+Detailed error messages expose internal structure and file paths.
+
+### **Vulnerability Details**
+- Stack traces may be exposed to clients
+- File paths revealed in error messages
+- Internal structure information disclosed
+- Aids attackers in reconnaissance
+
+### **Impact**
+**LOW-MEDIUM**: Information disclosure aids further attacks.
+
+### **Recommended Fix**
+Implement proper error handling with generic client messages and detailed server logging.
+
+---
+
+## 🔧 Bug #13: Excessive Debug Logging
+
+**Severity**: Low  
+**Status**: 🔍 **IDENTIFIED**  
+**Found During**: Engineering Manager Security Review  
+**Date**: August 5, 2025  
+
+### **Issue Description**
+346+ console.log statements across codebase may expose sensitive data and degrade performance.
+
+### **Vulnerability Details**
+- Sensitive data may be logged
+- Performance impact in production
+- Log files could contain secrets
+- No log level management
+
+### **Impact**
+**LOW**: Information disclosure and performance degradation.
+
+### **Recommended Fix**
+Implement proper logging levels and sanitize sensitive data from logs.
+
+---
+
+## 🔧 Bug #14: Missing Security Headers
+
+**Severity**: Low  
+**Status**: 🔍 **IDENTIFIED**  
+**Found During**: Engineering Manager Security Review  
+**Date**: August 5, 2025  
+
+### **Issue Description**
+No security headers implemented despite common vulnerabilities.
+
+### **Vulnerability Details**
+- No Content Security Policy (CSP)
+- No X-Frame-Options protection
+- No XSS protection headers
+- Missing HSTS headers
+
+### **Impact**
+**LOW**: Various client-side attacks (XSS, clickjacking, etc.).
+
+### **Recommended Fix**
+Implement security headers using helmet.js:
+```javascript
+const helmet = require('helmet');
+app.use(helmet());
+```
+
+---
+
+## 🔒 Bug #15: MCP Request Timeout Causing Claude Disconnection (CRITICAL)
+
+**Severity**: Critical  
+**Status**: 🚨 **IDENTIFIED - URGENT**  
+**Found During**: Live Testing  
+**Date**: August 5, 2025  
+
+### **Issue Description**
+MCP requests are timing out with error -32001, causing Claude Desktop to disconnect and send cancellation notifications. This breaks the core MCP integration functionality.
+
+### **Error Pattern**
+```
+POST /mcp/erikashby/c70e5d806f1e4ec9
+Request body: {
+  method: 'notifications/cancelled',
+  params: {
+    requestId: 4,
+    reason: 'McpError: MCP error -32001: Request timed out'
+  },
+  jsonrpc: '2.0'
+}
+```
+
+### **Symptoms**
+- Fresh server/transport created and connected successfully
+- Request handled by stateless transport
+- Request times out before completion
+- Claude sends cancellation notification
+- Pattern repeats, causing persistent disconnection
+
+### **Root Cause Analysis**
+Several potential causes for MCP request timeouts:
+
+#### **1. Slow File System Operations**
+- File reading operations taking too long
+- Large directory traversals
+- Inefficient context retrieval
+- No async optimization in file operations
+
+#### **2. Stateless Architecture Overhead**
+- Creating fresh server/transport per request adds latency
+- Connection setup time may be significant
+- Multiple initialization steps per request
+
+#### **3. Resource Contention**
+- Multiple concurrent requests competing for file system access
+- No request queuing or throttling
+- Memory/CPU spikes during processing
+
+#### **4. Network/Hosting Issues**
+- Render.com hosting latency
+- Network connectivity issues
+- Cold start delays
+
+### **Impact**
+**CRITICAL**: Core MCP functionality is broken
+- Claude Desktop cannot maintain connection
+- Users cannot access context through MCP
+- Makes the entire service unusable
+- Breaks the primary value proposition
+
+### **Diagnostic Steps Needed**
+1. **Add Performance Timing**:
+   ```javascript
+   const startTime = Date.now();
+   // ... MCP operation
+   console.log(`MCP operation took: ${Date.now() - startTime}ms`);
+   ```
+
+2. **Monitor File Operations**:
+   - Time individual file reads
+   - Check for large files causing delays
+   - Monitor directory listing performance
+
+3. **Test Request Patterns**:
+   - Identify which MCP methods are timing out
+   - Check if specific tools/resources cause timeouts
+   - Test with minimal vs. full context
+
+4. **Resource Monitoring**:
+   - Check memory usage during requests
+   - Monitor CPU utilization
+   - Check for memory leaks
+
+### **Potential Fixes**
+
+#### **Option A: Optimize File Operations** (Recommended First)
+```javascript
+// Add caching layer
+const contextCache = new Map();
+const CACHE_TTL = 30000; // 30 seconds
+
+async function getCachedContext(userId, projectId) {
+  const key = `${userId}:${projectId}`;
+  const cached = contextCache.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data;
+  }
+  // Read from filesystem
+  const data = await readProjectContext(userId, projectId);
+  contextCache.set(key, { data, timestamp: Date.now() });
+  return data;
+}
+```
+
+#### **Option B: Implement Request Timeout Handling**
+```javascript
+// Add timeout handling
+const timeout = new Promise((_, reject) => 
+  setTimeout(() => reject(new Error('Request timeout')), 25000) // 25s timeout
+);
+
+try {
+  const result = await Promise.race([mcpOperation(), timeout]);
+  return result;
+} catch (error) {
+  if (error.message === 'Request timeout') {
+    // Handle gracefully
+    return { error: 'Operation taking longer than expected, please retry' };
+  }
+  throw error;
+}
+```
+
+#### **Option C: Async Response Pattern**
+```javascript
+// For long operations, return immediate acknowledgment
+if (isLongRunningOperation(method)) {
+  // Return immediate response
+  res.json({ 
+    jsonrpc: '2.0', 
+    id: requestId, 
+    result: { status: 'processing', requestId } 
+  });
+  
+  // Process in background
+  processLongRunningOperation(params).then(result => {
+    // Send result via notification
+  });
+}
+```
+
+#### **Option D: Persistent Connection Architecture**
+- Consider moving away from stateless to persistent connections
+- Maintain connection pool for active users
+- Reduce per-request overhead
+
+### **Priority Actions**
+1. **Immediate**: Add performance timing to identify bottleneck
+2. **Short-term**: Implement caching layer for file operations
+3. **Medium-term**: Add proper timeout handling
+4. **Long-term**: Consider architecture changes if needed
+
+### **Files to Investigate**
+- `server-persistent.js` - MCP handling logic
+- File system operation functions
+- Context retrieval methods
+- Any large file or directory operations
+
+### **Testing Plan**
+1. Add timing logs and monitor for patterns
+2. Test with minimal context vs. full context
+3. Test individual MCP methods to isolate slow operations
+4. Monitor system resources during requests
+5. Test timeout handling implementation
