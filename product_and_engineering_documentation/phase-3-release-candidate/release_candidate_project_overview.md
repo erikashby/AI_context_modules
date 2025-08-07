@@ -44,6 +44,7 @@ Transform the AI Context Service prototype into a production-ready release candi
 #### **Product Strategy & Features Workstream**
 - Define feature roadmap based on user feedback and business priorities
 - Manage product requirements and specifications for release candidate
+- **Implement core features for release candidate launch**
 - Implement quality assurance and testing protocols
 - Drive product iteration based on early user validation
 
