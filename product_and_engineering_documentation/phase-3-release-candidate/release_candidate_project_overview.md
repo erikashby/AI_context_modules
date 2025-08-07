@@ -36,6 +36,7 @@ Transform the AI Context Service prototype into a production-ready release candi
 **Focus**: Build and scale the core technical platform
 
 #### **Infrastructure Workstream**
+**Goal: Transform service into a production-ready, scalable and secure system**
 - Redesign architecture from file-system prototype to scalable production system
 - **Resolve any known bugs from prototype MVP**
 - **Port prototype MVP to scalable production system (after redesign)**
