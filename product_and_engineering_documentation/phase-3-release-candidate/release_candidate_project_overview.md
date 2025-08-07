@@ -46,6 +46,7 @@ Transform the AI Context Service prototype into a production-ready release candi
 
 #### **Product Strategy & Features Workstream**
 **Goal: Build and optimize features that drive early user adoption on the service**
+- **Define the PRFAQ**
 - Define feature roadmap based on user feedback and business priorities
 - Manage product requirements and specifications for release candidate
 - **Implement core features for release candidate launch**
