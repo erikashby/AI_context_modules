@@ -28,7 +28,7 @@ Erik sets the decision-making approach for each project or situation. When you e
 ### 4. Repository Usage
 - Always reference the appropriate folder for context:
   - Business questions → company_documentation
-  - Technical questions → product_and_engineering_documentation  
+  - Technical questions → core_product_and_engineering (foundational) or project_phases (phase-specific)
   - Implementation questions → source_code
   - Working guidance → ai_instructions
 - **Check folder structures before making recommendations:** Use filesystem tools to examine actual folder contents and any README.md files within folders before suggesting file locations or organizational changes

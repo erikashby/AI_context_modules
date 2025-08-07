@@ -39,10 +39,15 @@ This repository contains the development of a **structured, persistent AI contex
 - Use when Erik asks about business strategy, company direction, or market positioning
 - Contains the "why" and "who" behind the project
 
-**product_and_engineering_documentation/** - Technical blueprint and development
-- Contains research findings, architecture designs, development progress, and product specifications
-- Reference when discussing product features, technical architecture, or development decisions
-- Contains the "what" and "how" of what we're building
+**project_phases/** - Chronological development phases
+- Contains phase-specific planning, progress, and lessons learned from project development
+- Reference when understanding project history, phase-specific decisions, or temporal progression
+- Contains the chronological "when" and "how we got here" of development
+
+**core_product_and_engineering/** - Technical foundation and architecture
+- Contains foundational technical architecture, system design, and cross-phase engineering specifications
+- Reference when discussing core technical decisions, system architecture, or foundational product features
+- Contains the enduring "what" and "how" of what we're building
 
 **source_code/** - Actual product implementation
 - Holds the code that will become the AI context service product
@@ -53,6 +58,7 @@ This repository contains the development of a **structured, persistent AI contex
 
 Always consider which folder contains the most relevant context for the current discussion:
 - **Business questions** → company_documentation
-- **Technical/product questions** → product_and_engineering_documentation  
+- **Phase-specific questions** → project_phases
+- **Technical/architecture questions** → core_product_and_engineering  
 - **Implementation questions** → source_code
 - **How to work effectively** → ai_instructions

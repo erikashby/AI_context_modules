@@ -1,20 +1,23 @@
-# Product and Engineering Documentation
+# Project Phases
 
-This folder contains all technical and product development materials for the AI Context Service.
+This folder contains chronological documentation of the AI Context Service development phases, tracking the temporal progression from initial concept through release candidate.
 
 ## Purpose
-Houses the technical blueprint, research findings, product specifications, and development progress for building the MCP-based context service.
+Houses phase-specific planning documents, development progress, lessons learned, and implementation details for each stage of the project lifecycle.
 
 ## When to Reference
-- Product feature discussions
-- Technical architecture questions
-- Development planning and progress
-- Research findings and validation
-- Testing and quality assurance
+- Understanding project history and evolution
+- Phase-specific development planning
+- Learning from previous phase experiences
+- Tracking progress against phase objectives
+- Research findings and validation specific to each phase
 
-## Subfolders
-- **discovery_and_research/** - Market research, user interviews, competitive analysis
-- **architecture_and_design/** - Technical architecture, system design, schemas
-- **development_sprints/** - Sprint planning, development progress, iteration notes
-- **testing_and_qa/** - Testing procedures, quality assurance, bug tracking
-- **product_documentation/** - Product specifications, user guides, feature documentation
+## Phase Structure
+- **phase-1-foundation/** - Initial technical investigation and minimal prototype development
+- **phase-1-auth-investigation/** - Authentication and security research
+- **phase-1-tech-proof/** - Technical proof of concept validation
+- **phase-2-prototype-mvp/** - MVP development and web portal implementation
+- **phase-3-release-candidate/** - Production-ready release candidate development
+
+## Related Documentation
+For foundational technical documentation that spans across phases, see the `core_product_and_engineering/` folder.
