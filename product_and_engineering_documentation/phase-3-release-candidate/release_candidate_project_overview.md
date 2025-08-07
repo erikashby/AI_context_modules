@@ -38,6 +38,7 @@ Transform the AI Context Service prototype into a production-ready release candi
 #### **Infrastructure Workstream**
 - Redesign architecture from file-system prototype to scalable production system
 - **Resolve any known bugs from prototype MVP**
+- **Port prototype MVP to scalable production system (after redesign)**
 - Implement production deployment pipeline and monitoring
 - Ensure performance optimization maintains <200ms MCP response times
 - Establish security hardening and compliance frameworks
