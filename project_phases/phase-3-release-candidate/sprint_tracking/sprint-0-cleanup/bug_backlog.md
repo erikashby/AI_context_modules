@@ -1,6 +1,6 @@
-# Sprint 1 Engineering Cleanup - Bug Backlog
+# Sprint 0 Production Cleanup - Bug Backlog
 
-**Sprint**: Sprint 1 - Engineering Cleanup  
+**Sprint**: Sprint 0 - Production Cleanup  
 **Date Created**: August 8, 2025  
 **Total Bugs**: 15  
 **Source**: Phase 2 UAT Bug Log + Security Review  
@@ -140,7 +140,7 @@
 
 **Total Estimated Effort:** 45-65 hours
 
-## Sprint 1 Focus
+## Sprint 0 Focus
 
 **Primary Goals:**
 1. Fix critical MCP timeout issue (Bug #15)
@@ -157,5 +157,5 @@
 ---
 
 **Last Updated**: August 8, 2025  
-**Next Review**: Daily standup during Sprint 1  
+**Next Review**: Daily standup during Sprint 0  
 **Sprint Target**: Complete critical and high priority bugs
