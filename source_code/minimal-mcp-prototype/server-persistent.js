@@ -1263,14 +1263,10 @@ function createServerForUser(username) {
             type: 'object',
             properties: {
               project_name: { type: 'string', description: 'Name for the new project' },
-              module_id: { type: 'string', description: 'Module template ID (e.g., personal-effectiveness-v1)' },
-              github_url: { type: 'string', description: 'GitHub repository URL (alternative to module_id, e.g., https://github.com/user/repo)' }
+              module_id: { type: 'string', description: 'Module template ID (e.g., personal-effectiveness-v1). Either module_id or github_url must be provided.' },
+              github_url: { type: 'string', description: 'GitHub repository URL (alternative to module_id, e.g., https://github.com/user/repo). Either module_id or github_url must be provided.' }
             },
-            required: ['project_name'],
-            oneOf: [
-              { required: ['module_id'] },
-              { required: ['github_url'] }
-            ]
+            required: ['project_name']
           }
         },
         {
