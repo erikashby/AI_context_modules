@@ -34,6 +34,254 @@ const MODULES_DIR = path.join(__dirname, 'modules');
 const fileCache = new Map();
 const CACHE_TTL = 30000; // 30 seconds
 
+// Connection pooling configuration
+const CONNECTION_POOLING_ENABLED = process.env.CONNECTION_POOLING_ENABLED !== 'false'; // Default: enabled
+const MAX_IDLE_TIME = parseInt(process.env.MAX_IDLE_TIME) || 10 * 60 * 1000; // 10 minutes
+const HEALTH_CHECK_INTERVAL = parseInt(process.env.HEALTH_CHECK_INTERVAL) || 60 * 1000; // 1 minute
+const MAX_CONNECTIONS_PER_USER = parseInt(process.env.MAX_CONNECTIONS_PER_USER) || 1; // Start conservative
+
+// Connection wrapper class
+class ConnectionWrapper {
+  constructor(username, server, transport) {
+    this.username = username;
+    this.server = server;
+    this.transport = transport;
+    this.createdAt = Date.now();
+    this.lastUsed = Date.now();
+    this.requestCount = 0;
+    this.isHealthy = true;
+    this.sessionId = `${username}_${Date.now()}`;
+    this.isInUse = false;
+  }
+
+  async handleRequest(req, res, requestId) {
+    this.markUsed();
+    this.isInUse = true;
+    
+    try {
+      console.log(`[${requestId}] Using pooled connection for ${this.username} (age: ${Date.now() - this.createdAt}ms, requests: ${this.requestCount})`);
+      
+      // Handle request with timeout
+      const OPERATION_TIMEOUT = 30000; // 30 seconds for actual operations
+      
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Operation timeout')), OPERATION_TIMEOUT);
+      });
+      
+      const handleRequestPromise = req.method === 'POST' 
+        ? this.transport.handleRequest(req, res, req.body)
+        : this.transport.handleRequest(req, res);
+      
+      const result = await Promise.race([handleRequestPromise, timeoutPromise]);
+      
+      console.log(`[${requestId}] Pooled connection request completed successfully`);
+      return result;
+      
+    } catch (error) {
+      console.error(`[${requestId}] Error in pooled connection:`, error);
+      
+      // Mark connection as unhealthy if it's a connection-related error
+      if (error.message.includes('transport') || error.message.includes('connection') || error.message.includes('stream')) {
+        this.isHealthy = false;
+        console.log(`[${requestId}] Marking connection as unhealthy due to: ${error.message}`);
+      }
+      
+      throw error;
+    } finally {
+      this.isInUse = false;
+    }
+  }
+
+  markUsed() {
+    this.lastUsed = Date.now();
+    this.requestCount++;
+  }
+
+  isStale() {
+    return Date.now() - this.lastUsed > MAX_IDLE_TIME;
+  }
+
+  async healthCheck() {
+    try {
+      // Simple health check - verify transport is still functional
+      if (!this.transport || this.transport.closed) {
+        this.isHealthy = false;
+        return false;
+      }
+      
+      // Additional health checks could go here
+      return this.isHealthy;
+    } catch (error) {
+      console.error(`Health check failed for ${this.username}:`, error);
+      this.isHealthy = false;
+      return false;
+    }
+  }
+
+  async close() {
+    try {
+      console.log(`Closing connection for ${this.username} (age: ${Date.now() - this.createdAt}ms, requests: ${this.requestCount})`);
+      
+      if (this.transport && !this.transport.closed) {
+        await this.transport.close();
+      }
+      
+      if (this.server) {
+        await this.server.close();
+      }
+      
+    } catch (error) {
+      console.error(`Error closing connection for ${this.username}:`, error);
+    }
+  }
+}
+
+// MCP Connection Pool class
+class MCPConnectionPool {
+  constructor() {
+    this.connections = new Map(); // username -> ConnectionWrapper
+    this.stats = {
+      created: 0,
+      reused: 0,
+      closed: 0,
+      errors: 0
+    };
+    
+    // Start health check interval
+    this.healthCheckTimer = setInterval(() => {
+      this.performHealthChecks();
+    }, HEALTH_CHECK_INTERVAL);
+    
+    // Graceful shutdown cleanup
+    process.on('SIGTERM', () => this.closeAll());
+    process.on('SIGINT', () => this.closeAll());
+  }
+
+  async getConnection(username) {
+    try {
+      let connection = this.connections.get(username);
+      
+      // Check if connection exists and is healthy
+      if (connection) {
+        if (connection.isHealthy && !connection.isStale() && !connection.isInUse) {
+          console.log(`Reusing existing connection for ${username}`);
+          this.stats.reused++;
+          return connection;
+        } else {
+          // Connection is stale, unhealthy, or in use - remove it
+          console.log(`Removing stale/unhealthy/busy connection for ${username}`);
+          await this.removeConnection(username);
+        }
+      }
+      
+      // Create new connection
+      console.log(`Creating new pooled connection for ${username}`);
+      connection = await this.createConnection(username);
+      this.connections.set(username, connection);
+      this.stats.created++;
+      
+      return connection;
+      
+    } catch (error) {
+      console.error(`Error getting connection for ${username}:`, error);
+      this.stats.errors++;
+      throw error;
+    }
+  }
+
+  async createConnection(username) {
+    try {
+      const server = createServerForUser(username);
+      const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: () => `pooled_${username}_${Date.now()}` // Stable session ID for pooling
+      });
+      
+      // Connect server to transport
+      await server.connect(transport);
+      
+      const connection = new ConnectionWrapper(username, server, transport);
+      console.log(`Created new pooled connection for ${username} with session: ${connection.sessionId}`);
+      
+      return connection;
+      
+    } catch (error) {
+      console.error(`Failed to create connection for ${username}:`, error);
+      throw error;
+    }
+  }
+
+  async removeConnection(username) {
+    const connection = this.connections.get(username);
+    if (connection) {
+      await connection.close();
+      this.connections.delete(username);
+      this.stats.closed++;
+    }
+  }
+
+  async performHealthChecks() {
+    console.log(`Performing health checks on ${this.connections.size} connections`);
+    
+    const unhealthyUsers = [];
+    
+    for (const [username, connection] of this.connections) {
+      if (connection.isStale()) {
+        console.log(`Connection for ${username} is stale (last used: ${Date.now() - connection.lastUsed}ms ago)`);
+        unhealthyUsers.push(username);
+      } else if (!await connection.healthCheck()) {
+        console.log(`Health check failed for ${username}`);
+        unhealthyUsers.push(username);
+      }
+    }
+    
+    // Remove unhealthy connections
+    for (const username of unhealthyUsers) {
+      await this.removeConnection(username);
+    }
+    
+    if (unhealthyUsers.length > 0) {
+      console.log(`Cleaned up ${unhealthyUsers.length} unhealthy connections`);
+    }
+  }
+
+  getStats() {
+    return {
+      ...this.stats,
+      activeConnections: this.connections.size,
+      connectionDetails: Array.from(this.connections.entries()).map(([username, conn]) => ({
+        username,
+        age: Date.now() - conn.createdAt,
+        lastUsed: Date.now() - conn.lastUsed,
+        requests: conn.requestCount,
+        healthy: conn.isHealthy,
+        inUse: conn.isInUse
+      }))
+    };
+  }
+
+  async closeAll() {
+    console.log(`Closing all ${this.connections.size} pooled connections`);
+    
+    if (this.healthCheckTimer) {
+      clearInterval(this.healthCheckTimer);
+    }
+    
+    const closePromises = Array.from(this.connections.values()).map(conn => conn.close());
+    await Promise.all(closePromises);
+    
+    this.connections.clear();
+    console.log('All pooled connections closed');
+  }
+}
+
+// Global connection pool instance
+const connectionPool = CONNECTION_POOLING_ENABLED ? new MCPConnectionPool() : null;
+
+console.log(`Connection pooling: ${CONNECTION_POOLING_ENABLED ? 'ENABLED' : 'DISABLED'}`);
+if (connectionPool) {
+  console.log(`Pool settings - Max idle: ${MAX_IDLE_TIME}ms, Health check: ${HEALTH_CHECK_INTERVAL}ms, Max per user: ${MAX_CONNECTIONS_PER_USER}`);
+}
+
 function getCacheKey(filePath) {
   return `file:${filePath}`;
 }
@@ -3211,13 +3459,59 @@ app.put('/api/projects/:projectName/file', async (req, res) => {
 
 // Debug endpoints removed for production security
 
-// Authenticated MCP endpoint - SECURITY ENHANCED
+// Connection pool statistics endpoint (for monitoring and debugging)
+app.get('/pool/stats', async (req, res) => {
+  try {
+    if (!CONNECTION_POOLING_ENABLED || !connectionPool) {
+      return res.json({
+        enabled: false,
+        message: 'Connection pooling is disabled'
+      });
+    }
+    
+    const stats = connectionPool.getStats();
+    res.json({
+      enabled: true,
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      ...stats
+    });
+  } catch (error) {
+    console.error('Error getting pool stats:', error);
+    res.status(500).json({ error: 'Error retrieving pool statistics' });
+  }
+});
+
+// Force pool cleanup endpoint (for debugging)
+app.post('/pool/cleanup', async (req, res) => {
+  try {
+    if (!CONNECTION_POOLING_ENABLED || !connectionPool) {
+      return res.json({
+        enabled: false,
+        message: 'Connection pooling is disabled'
+      });
+    }
+    
+    await connectionPool.performHealthChecks();
+    const stats = connectionPool.getStats();
+    
+    res.json({
+      message: 'Health checks performed',
+      stats
+    });
+  } catch (error) {
+    console.error('Error performing pool cleanup:', error);
+    res.status(500).json({ error: 'Error performing cleanup' });
+  }
+});
+
+// Authenticated MCP endpoint - PRODUCTION READY with Connection Pooling
 // Required format: /mcp/:username/:key
 app.all('/mcp/:username/:key', async (req, res) => {
   const requestStartTime = Date.now();
   const requestId = Math.random().toString(36).substring(7);
   
-  console.log(`[${requestId}] ${req.method} ${req.url} - Request started`);
+  console.log(`[${requestId}] ${req.method} ${req.url} - Request started (Pooling: ${CONNECTION_POOLING_ENABLED ? 'ON' : 'OFF'})`);
   console.log(`[${requestId}] Request body:`, req.body);
   
   const { username, key } = req.params;
@@ -3236,30 +3530,121 @@ app.all('/mcp/:username/:key', async (req, res) => {
   console.log(`[${requestId}] Authenticated MCP request for user: ${username}`);
   
   try {
+    if (CONNECTION_POOLING_ENABLED && connectionPool) {
+      // USE CONNECTION POOLING - Production approach
+      await handleMCPWithPooling(req, res, username, requestId, requestStartTime);
+    } else {
+      // FALLBACK TO STATELESS - Legacy approach
+      await handleMCPStateless(req, res, username, requestId, requestStartTime);
+    }
+    
+  } catch (error) {
+    const totalTime = Date.now() - requestStartTime;
+    console.error(`[${requestId}] MCP error (after ${totalTime}ms):`, error);
+    
+    if (!res.headersSent) {
+      res.status(500).json({
+        jsonrpc: '2.0',
+        error: {
+          code: -32603,
+          message: 'Internal server error',
+        },
+        id: req.body?.id || null,
+      });
+    }
+  }
+});
+
+// Handle MCP requests using connection pooling
+async function handleMCPWithPooling(req, res, username, requestId, requestStartTime) {
+  try {
+    // Get connection from pool (reuse existing or create new)
+    const poolStartTime = Date.now();
+    const connection = await connectionPool.getConnection(username);
+    console.log(`[${requestId}] Pool operation took: ${Date.now() - poolStartTime}ms`);
+    
+    // Handle request using pooled connection
+    const handleStartTime = Date.now();
+    await connection.handleRequest(req, res, requestId);
+    
+    const handleTime = Date.now() - handleStartTime;
+    const totalTime = Date.now() - requestStartTime;
+    console.log(`[${requestId}] Pooled request completed - Handle: ${handleTime}ms, Total: ${totalTime}ms`);
+    
+    // Log pool statistics periodically
+    if (Math.random() < 0.1) { // 10% chance
+      const stats = connectionPool.getStats();
+      console.log(`[POOL-STATS] Active: ${stats.activeConnections}, Created: ${stats.created}, Reused: ${stats.reused}, Closed: ${stats.closed}, Errors: ${stats.errors}`);
+    }
+    
+  } catch (error) {
+    console.error(`[${requestId}] Pooled connection error:`, error);
+    
+    // Handle specific timeout errors
+    if (error.message === 'Operation timeout') {
+      console.log(`[${requestId}] Pooled operation timed out`);
+      if (!res.headersSent) {
+        res.status(408).json({
+          jsonrpc: '2.0',
+          error: {
+            code: -32001,
+            message: 'Operation timed out - please retry',
+          },
+          id: req.body?.id || null,
+        });
+      }
+      return;
+    }
+    
+    // For connection errors, try to recover by creating a fresh connection
+    if (error.message.includes('transport') || error.message.includes('connection') || error.message.includes('stream')) {
+      console.log(`[${requestId}] Connection error detected, removing from pool and falling back to stateless`);
+      try {
+        await connectionPool.removeConnection(username);
+      } catch (removeError) {
+        console.error(`[${requestId}] Error removing connection from pool:`, removeError);
+      }
+      
+      // Fallback to stateless mode for this request
+      console.log(`[${requestId}] Falling back to stateless mode`);
+      await handleMCPStateless(req, res, username, requestId, requestStartTime);
+      return;
+    }
+    
+    throw error; // Re-throw other errors
+  }
+}
+
+// Handle MCP requests using stateless approach (fallback)
+async function handleMCPStateless(req, res, username, requestId, requestStartTime) {
+  let server = null;
+  let transport = null;
+  
+  try {
     // Create fresh server instance for this request with user context
     const serverStartTime = Date.now();
-    const server = createServerForUser(username);
-    console.log(`[${requestId}] Server creation took: ${Date.now() - serverStartTime}ms`);
+    server = createServerForUser(username);
+    console.log(`[${requestId}] Stateless server creation took: ${Date.now() - serverStartTime}ms`);
     
     // Create stateless transport (sessionIdGenerator: undefined)
     const transportStartTime = Date.now();
-    const transport = new StreamableHTTPServerTransport({
+    transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: undefined // Stateless mode - CRITICAL SUCCESS FACTOR
     });
-    console.log(`[${requestId}] Transport creation took: ${Date.now() - transportStartTime}ms`);
+    console.log(`[${requestId}] Stateless transport creation took: ${Date.now() - transportStartTime}ms`);
 
     // Handle cleanup on request close
     res.on('close', () => {
       const totalTime = Date.now() - requestStartTime;
-      console.log(`[${requestId}] Request closed - cleaning up (Total time: ${totalTime}ms)`);
-      transport.close();
-      server.close();
+      console.log(`[${requestId}] Stateless request closed - cleaning up (Total time: ${totalTime}ms)`);
+      if (transport) transport.close();
+      if (server) server.close();
     });
 
     // Connect server to transport
     const connectStartTime = Date.now();
     await server.connect(transport);
-    console.log(`[${requestId}] Server connect took: ${Date.now() - connectStartTime}ms`);
+    console.log(`[${requestId}] Stateless server connect took: ${Date.now() - connectStartTime}ms`);
     console.log(`[${requestId}] Fresh server/transport created and connected`);
     
     // Handle the request with timeout
@@ -3278,11 +3663,11 @@ app.all('/mcp/:username/:key', async (req, res) => {
       await Promise.race([handleRequestPromise, timeoutPromise]);
       const handleTime = Date.now() - handleStartTime;
       const totalTime = Date.now() - requestStartTime;
-      console.log(`[${requestId}] Request handling took: ${handleTime}ms`);
-      console.log(`[${requestId}] Total request time: ${totalTime}ms`);
+      console.log(`[${requestId}] Stateless request handling took: ${handleTime}ms`);
+      console.log(`[${requestId}] Stateless total request time: ${totalTime}ms`);
     } catch (error) {
       if (error.message === 'Request timeout') {
-        console.log(`[${requestId}] Request timed out after ${REQUEST_TIMEOUT}ms`);
+        console.log(`[${requestId}] Stateless request timed out after ${REQUEST_TIMEOUT}ms`);
         if (!res.headersSent) {
           res.status(408).json({
             jsonrpc: '2.0',
@@ -3290,7 +3675,7 @@ app.all('/mcp/:username/:key', async (req, res) => {
               code: -32001,
               message: 'Request timed out - operation taking longer than expected',
             },
-            id: null,
+            id: req.body?.id || null,
           });
         }
         return;
@@ -3298,21 +3683,20 @@ app.all('/mcp/:username/:key', async (req, res) => {
       throw error; // Re-throw other errors
     }
     
-  } catch (error) {
-    const totalTime = Date.now() - requestStartTime;
-    console.error(`[${requestId}] Stateless MCP error (after ${totalTime}ms):`, error);
-    if (!res.headersSent) {
-      res.status(500).json({
-        jsonrpc: '2.0',
-        error: {
-          code: -32603,
-          message: 'Internal server error',
-        },
-        id: null,
-      });
+  } finally {
+    // Cleanup stateless resources
+    try {
+      if (transport) {
+        transport.close();
+      }
+      if (server) {
+        server.close();
+      }
+    } catch (cleanupError) {
+      console.error(`[${requestId}] Error during stateless cleanup:`, cleanupError);
     }
   }
-});
+}
 
 // Initialize file system on startup
 async function startServer() {
