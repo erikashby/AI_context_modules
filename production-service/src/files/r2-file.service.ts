@@ -425,6 +425,11 @@ export class R2FileService implements FileService {
   }
 
   sanitizePath(path: string): string {
+    // Handle empty string (root directory) - should remain empty
+    if (path === '') {
+      return '';
+    }
+    
     return path
       .replace(/\\/g, '/') // Convert backslashes to forward slashes
       .replace(/\/+/g, '/') // Replace multiple slashes with single slash
