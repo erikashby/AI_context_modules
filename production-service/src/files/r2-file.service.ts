@@ -289,8 +289,8 @@ export class R2FileService implements FileService {
       throw new BadRequestException('Invalid username');
     }
 
-    if (!path || typeof path !== 'string') {
-      throw new BadRequestException('Invalid path');
+    if (typeof path !== 'string') {
+      throw new BadRequestException('Invalid path: must be a string');
     }
 
     // Sanitize path
