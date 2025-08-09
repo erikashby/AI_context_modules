@@ -34,8 +34,12 @@ export class R2FileService implements FileService {
       !r2Config?.accessKeyId ||
       !r2Config?.secretAccessKey
     ) {
-      this.logger.error('R2 configuration is missing. Service will not be functional.');
-      this.logger.error('Please check environment variables: R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY');
+      this.logger.error(
+        'R2 configuration is missing. Service will not be functional.',
+      );
+      this.logger.error(
+        'Please check environment variables: R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY',
+      );
       throw new Error(
         'R2 configuration is missing. Please check environment variables.',
       );
@@ -210,9 +214,11 @@ export class R2FileService implements FileService {
     this.validatePath(username, folderPath);
 
     // Ensure folder path ends with /
-    const normalizedPath = folderPath.endsWith('/') ? folderPath : `${folderPath}/`;
+    const normalizedPath = folderPath.endsWith('/')
+      ? folderPath
+      : `${folderPath}/`;
     const folderKey = `users/${username}/${normalizedPath}.folderkeeper`;
-    
+
     const startTime = Date.now();
 
     try {
@@ -241,10 +247,16 @@ export class R2FileService implements FileService {
     }
   }
 
-  async removeFolder(username: string, folderPath: string, recursive: boolean = false): Promise<void> {
+  async removeFolder(
+    username: string,
+    folderPath: string,
+    recursive: boolean = false,
+  ): Promise<void> {
     this.validatePath(username, folderPath);
 
-    const normalizedPath = folderPath.endsWith('/') ? folderPath : `${folderPath}/`;
+    const normalizedPath = folderPath.endsWith('/')
+      ? folderPath
+      : `${folderPath}/`;
     const prefix = `users/${username}/${normalizedPath}`;
     const startTime = Date.now();
 
@@ -264,10 +276,14 @@ export class R2FileService implements FileService {
       }
 
       // Check if folder has contents (other than .folderkeeper)
-      const nonMarkerFiles = objects.filter(obj => !obj.Key?.endsWith('.folderkeeper'));
-      
+      const nonMarkerFiles = objects.filter(
+        (obj) => !obj.Key?.endsWith('.folderkeeper'),
+      );
+
       if (nonMarkerFiles.length > 0 && !recursive) {
-        throw new BadRequestException(`Folder not empty: ${folderPath}. Use recursive=true to delete all contents.`);
+        throw new BadRequestException(
+          `Folder not empty: ${folderPath}. Use recursive=true to delete all contents.`,
+        );
       }
 
       // Delete all objects in the folder
@@ -284,7 +300,9 @@ export class R2FileService implements FileService {
       await Promise.all(deletePromises);
 
       const duration = Date.now() - startTime;
-      this.logger.log(`Folder removed: ${prefix} (${duration}ms, ${objects.length} objects deleted)`);
+      this.logger.log(
+        `Folder removed: ${prefix} (${duration}ms, ${objects.length} objects deleted)`,
+      );
     } catch (error: unknown) {
       const duration = Date.now() - startTime;
       this.logger.error(

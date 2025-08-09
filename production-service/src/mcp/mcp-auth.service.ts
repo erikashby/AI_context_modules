@@ -27,8 +27,10 @@ export class McpAuthService {
 
       // Validate key (constant time comparison)
       const isValid = profile.mcpKey === key;
-      console.log(`MCP auth ${isValid ? 'SUCCESS' : 'FAILURE'} - User: ${username}`);
-      
+      console.log(
+        `MCP auth ${isValid ? 'SUCCESS' : 'FAILURE'} - User: ${username}`,
+      );
+
       return isValid;
     } catch (error) {
       console.error(`MCP auth ERROR - User: ${username}`, error);
@@ -41,7 +43,10 @@ export class McpAuthService {
    */
   async getUserProfile(username: string): Promise<UserProfile | null> {
     try {
-      const profileContent = await this.fileService.readFile(username, 'profile/user.json');
+      const profileContent = await this.fileService.readFile(
+        username,
+        'profile/user.json',
+      );
       return JSON.parse(profileContent);
     } catch (error) {
       // Profile not found is expected for non-existent users

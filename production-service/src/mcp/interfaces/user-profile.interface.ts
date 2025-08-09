@@ -4,7 +4,7 @@ export interface UserProfile {
   passwordHash: string;
   mcpKey: string;
   created: string; // ISO timestamp
-  lastActive: string; // ISO timestamp  
+  lastActive: string; // ISO timestamp
   projects: string[];
   settings: UserSettings;
 }

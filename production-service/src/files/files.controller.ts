@@ -5,7 +5,6 @@ import type { FileService } from './file-service.interface';
 export class FilesController {
   constructor(@Inject('FileService') private fileService: FileService) {}
 
-
   // NOTE: All file operations are now internal service methods only.
   // File access should go through:
   // - MCP protocol endpoints (authenticated): /api/v1/mcp/:username/:key
