@@ -241,6 +241,60 @@ export class R2FileService implements FileService {
     }
   }
 
+  async removeFolder(username: string, folderPath: string, recursive: boolean = false): Promise<void> {
+    this.validatePath(username, folderPath);
+
+    const normalizedPath = folderPath.endsWith('/') ? folderPath : `${folderPath}/`;
+    const prefix = `users/${username}/${normalizedPath}`;
+    const startTime = Date.now();
+
+    try {
+      // List all objects in the folder
+      const listCommand = new ListObjectsV2Command({
+        Bucket: this.bucket,
+        Prefix: prefix,
+      });
+
+      const response = await this.s3Client.send(listCommand);
+      const objects = response.Contents || [];
+
+      if (objects.length === 0) {
+        this.logger.log(`Folder already empty or doesn't exist: ${prefix}`);
+        return;
+      }
+
+      // Check if folder has contents (other than .folderkeeper)
+      const nonMarkerFiles = objects.filter(obj => !obj.Key?.endsWith('.folderkeeper'));
+      
+      if (nonMarkerFiles.length > 0 && !recursive) {
+        throw new BadRequestException(`Folder not empty: ${folderPath}. Use recursive=true to delete all contents.`);
+      }
+
+      // Delete all objects in the folder
+      const deletePromises = objects.map(async (obj) => {
+        if (obj.Key) {
+          const deleteCommand = new DeleteObjectCommand({
+            Bucket: this.bucket,
+            Key: obj.Key,
+          });
+          await this.s3Client.send(deleteCommand);
+        }
+      });
+
+      await Promise.all(deletePromises);
+
+      const duration = Date.now() - startTime;
+      this.logger.log(`Folder removed: ${prefix} (${duration}ms, ${objects.length} objects deleted)`);
+    } catch (error: unknown) {
+      const duration = Date.now() - startTime;
+      this.logger.error(
+        `Folder removal failed: ${prefix} (${duration}ms)`,
+        error instanceof Error ? error.stack : String(error),
+      );
+      throw error;
+    }
+  }
+
   async listFiles(username: string, path: string = ''): Promise<FileInfo[]> {
     this.validatePath(username, path);
 

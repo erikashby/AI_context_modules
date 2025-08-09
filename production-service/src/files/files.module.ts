@@ -28,6 +28,7 @@ import { FilesController } from './files.controller';
             async deleteFile() { throw mockError; },
             async listFiles() { throw mockError; },
             async createFolder() { throw mockError; },
+            async removeFolder() { throw mockError; },
             async listAvailableModules() { throw mockError; },
             async getModuleTemplate() { throw mockError; },
             validatePath() { throw mockError; },

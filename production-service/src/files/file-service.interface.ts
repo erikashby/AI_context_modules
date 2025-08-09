@@ -58,6 +58,7 @@ export interface FileService {
   deleteFile(username: string, path: string): Promise<void>;
   listFiles(username: string, path: string): Promise<FileInfo[]>;
   createFolder(username: string, folderPath: string): Promise<void>;
+  removeFolder(username: string, folderPath: string, recursive?: boolean): Promise<void>;
 
   // Module Template Operations
   listAvailableModules(): Promise<ModuleInfo[]>;
