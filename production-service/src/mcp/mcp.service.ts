@@ -40,9 +40,7 @@ export class McpService {
         },
         {
           capabilities: {
-            tools: {
-              listChanged: false,
-            },
+            tools: {},
           },
         },
       );

@@ -34,6 +34,8 @@ export class R2FileService implements FileService {
       !r2Config?.accessKeyId ||
       !r2Config?.secretAccessKey
     ) {
+      this.logger.error('R2 configuration is missing. Service will not be functional.');
+      this.logger.error('Please check environment variables: R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY');
       throw new Error(
         'R2 configuration is missing. Please check environment variables.',
       );
