@@ -2559,7 +2559,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Session configuration
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'ai-context-service-dev-secret-change-in-production',
+  secret: process.env.SESSION_SECRET || (() => {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('SESSION_SECRET must be set in production');
+    }
+    return crypto.randomBytes(64).toString('hex');
+  })(),
   resave: false,
   saveUninitialized: false,
   cookie: {

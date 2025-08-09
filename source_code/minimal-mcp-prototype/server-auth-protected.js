@@ -76,16 +76,44 @@ async function validateProjectId(projectId) {
 async function getFilePath(projectId, filePath) {
   await validateProjectId(projectId);
   
-  // Sanitize file path to prevent directory traversal
-  const sanitizedPath = filePath.replace(/^\/+|\/+$/g, '').replace(/\.\./g, '');
-  const fullPath = path.join(PERSONAL_ORG_DIR, sanitizedPath);
+  // Remove leading/trailing slashes
+  let cleanPath = filePath.replace(/^\/+|\/+$/g, '');
   
-  // Ensure the path is within our project directory
-  if (!fullPath.startsWith(PERSONAL_ORG_DIR)) {
-    throw new Error('Invalid file path: Path must be within project directory');
+  // Additional security: URL decode the path to catch encoded traversal attempts
+  try {
+    cleanPath = decodeURIComponent(cleanPath);
+  } catch (e) {
+    // If decoding fails, use original (safer than allowing potential malformed input)
   }
   
-  return fullPath;
+  // Reject paths containing any traversal patterns before resolution
+  const dangerousPatterns = [
+    /\.\./,          // Standard directory traversal
+    /\.\.\\/,        // Windows-style traversal  
+    /\.\.\//,        // Unix-style traversal
+    /\.\.$/,         // Trailing dots
+    /%2e%2e/i,       // URL encoded .. (case insensitive)
+    /%2f/i,          // URL encoded / (case insensitive)
+    /%5c/i,          // URL encoded \ (case insensitive)
+    /\0/             // Null bytes
+  ];
+  
+  for (const pattern of dangerousPatterns) {
+    if (pattern.test(cleanPath)) {
+      throw new Error(`Access denied: Path contains prohibited pattern`);
+    }
+  }
+  
+  // Resolve the full absolute path
+  const resolvedPath = path.resolve(PERSONAL_ORG_DIR, cleanPath);
+  const allowedBase = path.resolve(PERSONAL_ORG_DIR);
+  
+  // Critical security check: ensure resolved path is within allowed directory
+  if (!resolvedPath.startsWith(allowedBase + path.sep) && resolvedPath !== allowedBase) {
+    throw new Error(`Access denied: Path ${cleanPath} resolves outside allowed directory`);
+  }
+  
+  return resolvedPath;
 }
 
 async function initializeFileSystem() {
