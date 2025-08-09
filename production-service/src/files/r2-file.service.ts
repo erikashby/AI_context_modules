@@ -318,6 +318,11 @@ export class R2FileService implements FileService {
 
     const prefix = `users/${username}/${path}`;
     const startTime = Date.now();
+    
+    // Debug logging
+    console.log(`[DEBUG] listFiles called with username="${username}", path="${path}"`);
+    console.log(`[DEBUG] S3 prefix: "${prefix}"`);
+    console.log(`[DEBUG] Bucket: "${this.bucket}"`);
 
     try {
       const command = new ListObjectsV2Command({
@@ -328,6 +333,13 @@ export class R2FileService implements FileService {
 
       const response = await this.s3Client.send(command);
       const files: FileInfo[] = [];
+      
+      // Debug logging
+      console.log(`[DEBUG] S3 Response - Contents count: ${response.Contents?.length || 0}`);
+      console.log(`[DEBUG] S3 Response - CommonPrefixes count: ${response.CommonPrefixes?.length || 0}`);
+      if (response.Contents) {
+        console.log('[DEBUG] Contents keys:', response.Contents.map(c => c.Key));
+      }
 
       // Add directories (CommonPrefixes)
       if (response.CommonPrefixes) {
