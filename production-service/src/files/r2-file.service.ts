@@ -206,6 +206,41 @@ export class R2FileService implements FileService {
     }
   }
 
+  async createFolder(username: string, folderPath: string): Promise<void> {
+    this.validatePath(username, folderPath);
+
+    // Ensure folder path ends with /
+    const normalizedPath = folderPath.endsWith('/') ? folderPath : `${folderPath}/`;
+    const folderKey = `users/${username}/${normalizedPath}.folderkeeper`;
+    
+    const startTime = Date.now();
+
+    try {
+      const command = new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: folderKey,
+        Body: '',
+        ContentType: 'text/plain',
+        Metadata: {
+          'folder-marker': 'true',
+          'created-by': 'file-service',
+        },
+      });
+
+      await this.s3Client.send(command);
+
+      const duration = Date.now() - startTime;
+      this.logger.log(`Folder created: ${folderKey} (${duration}ms)`);
+    } catch (error: unknown) {
+      const duration = Date.now() - startTime;
+      this.logger.error(
+        `Folder creation failed: ${folderKey} (${duration}ms)`,
+        error instanceof Error ? error.stack : String(error),
+      );
+      throw error;
+    }
+  }
+
   async listFiles(username: string, path: string = ''): Promise<FileInfo[]> {
     this.validatePath(username, path);
 

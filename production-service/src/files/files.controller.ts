@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Inject } from '@nestjs/common';
+import { Controller, Get, Inject } from '@nestjs/common';
 import type { FileService } from './file-service.interface';
 
 @Controller('files')
@@ -26,83 +26,14 @@ export class FilesController {
     }
   }
 
-  @Post('test-write')
-  async testWrite(@Body() body: { username: string; content: string }) {
-    const { username, content } = body;
-    const testPath = `test-${Date.now()}.txt`;
-
-    try {
-      // Write test file
-      await this.fileService.writeFile(username, testPath, content);
-
-      // Read it back
-      const readContent = await this.fileService.readFile(username, testPath);
-
-      // Clean up
-      await this.fileService.deleteFile(username, testPath);
-
-      return {
-        success: true,
-        message: 'Write/Read/Delete test successful',
-        written: content,
-        read: readContent,
-        match: content === readContent,
-        timestamp: new Date().toISOString(),
-      };
-    } catch (error: unknown) {
-      return {
-        success: false,
-        message: 'Write/Read/Delete test failed',
-        error: error instanceof Error ? error.message : String(error),
-        timestamp: new Date().toISOString(),
-      };
-    }
-  }
-
-  @Get('user/:username/files')
-  async listUserFiles(@Param('username') username: string) {
-    try {
-      const files = await this.fileService.listFiles(username, '');
-      return {
-        success: true,
-        username,
-        files,
-        count: files.length,
-        timestamp: new Date().toISOString(),
-      };
-    } catch (error: unknown) {
-      return {
-        success: false,
-        message: 'Failed to list user files',
-        error: error instanceof Error ? error.message : String(error),
-        timestamp: new Date().toISOString(),
-      };
-    }
-  }
-
-  @Post('create-test-file')
-  async createTestFile(@Body() body: { username: string; filename?: string; content?: string }) {
-    const { username, filename = 'test-file.txt', content = 'Hello from R2! Created at ' + new Date().toISOString() } = body;
-    
-    try {
-      await this.fileService.writeFile(username, filename, content);
-      
-      return {
-        success: true,
-        message: 'Test file created successfully',
-        username,
-        filename,
-        content,
-        path: `users/${username}/${filename}`,
-        timestamp: new Date().toISOString(),
-      };
-    } catch (error: unknown) {
-      return {
-        success: false,
-        message: 'Failed to create test file',
-        error: error instanceof Error ? error.message : String(error),
-        timestamp: new Date().toISOString(),
-      };
-    }
-  }
+  // NOTE: All file operations are now internal service methods only.
+  // File access should go through:
+  // - MCP protocol endpoints (authenticated): /api/v1/mcp/:username/:key
+  // - Future authenticated web UI endpoints
+  // - Internal service-to-service calls
+  //
+  // Public file endpoints removed for security:
+  // - Prevented unauthorized access to user files
+  // - Eliminated DOS attack vector from test-write endpoint
+  // - Enforces proper authentication flow
 }

@@ -14,23 +14,24 @@ import { FilesController } from './files.controller';
           return new R2FileService(configService);
         } catch (error) {
           console.error('Failed to initialize R2FileService:', error.message);
-          // Return a mock service that throws helpful errors
+          // Return a mock service that implements the FileService interface
+          const mockError = new Error('R2 service not configured. Please check environment variables.');
           return {
-            async testConnection() {
-              throw new Error('R2 service not configured. Please check environment variables.');
-            },
-            async listFiles() { 
-              throw new Error('R2 service not configured. Please check environment variables.'); 
-            },
-            async writeFile() { 
-              throw new Error('R2 service not configured. Please check environment variables.'); 
-            },
-            async readFile() { 
-              throw new Error('R2 service not configured. Please check environment variables.'); 
-            },
-            async deleteFile() { 
-              throw new Error('R2 service not configured. Please check environment variables.'); 
-            }
+            async getUserProfile() { throw mockError; },
+            async setUserProfile() { throw mockError; },
+            async userExists() { throw mockError; },
+            async listUserProjects() { throw mockError; },
+            async createProject() { throw mockError; },
+            async deleteProject() { throw mockError; },
+            async readFile() { throw mockError; },
+            async writeFile() { throw mockError; },
+            async deleteFile() { throw mockError; },
+            async listFiles() { throw mockError; },
+            async createFolder() { throw mockError; },
+            async listAvailableModules() { throw mockError; },
+            async getModuleTemplate() { throw mockError; },
+            validatePath() { throw mockError; },
+            sanitizePath() { throw mockError; },
           };
         }
       },
