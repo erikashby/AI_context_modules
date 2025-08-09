@@ -11,8 +11,8 @@ export class McpController {
     @Param('username') username: string,
     @Param('key') key: string,
     @Req() req: Request,
-    @Res() res: Response,
+    @Res({ passthrough: false }) res: Response,
   ) {
-    return this.mcpService.handleRequest(req, res, username, key);
+    await this.mcpService.handleRequest(req, res, username, key);
   }
 }
