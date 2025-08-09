@@ -6,9 +6,11 @@ import {
   ListToolsRequestSchema,
   CallToolRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
+import { McpAuthService } from './mcp-auth.service';
 
 @Injectable()
 export class McpService {
+  constructor(private mcpAuthService: McpAuthService) {}
   async handleRequest(
     req: Request,
     res: Response,
@@ -21,8 +23,8 @@ export class McpService {
     );
 
     try {
-      // 1. Basic API key validation (placeholder)
-      if (!this.validateApiKey(username, key)) {
+      // 1. Real file-based API key validation
+      if (!await this.mcpAuthService.validateApiKey(username, key)) {
         console.log(`[${requestId}] Authentication failed for ${username}`);
         return res.status(401).json({
           error: 'Invalid authentication credentials',
@@ -139,19 +141,4 @@ export class McpService {
     }
   }
 
-  private validateApiKey(username: string, key: string): boolean {
-    // Placeholder validation - for testing only
-    // In production, this would read from user profile files
-    if (username === 'testuser' && key === 'testkey') {
-      return true;
-    }
-
-    // Allow erik/demo for initial testing
-    if (username === 'erik' && key === 'demo') {
-      return true;
-    }
-
-    console.log(`Invalid credentials: ${username}/${key}`);
-    return false;
-  }
 }
