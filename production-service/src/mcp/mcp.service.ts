@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Inject,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -17,7 +18,7 @@ import type { FileService } from '../files/file-service.interface';
 export class McpService {
   constructor(
     private mcpAuthService: McpAuthService,
-    private fileService: FileService,
+    @Inject('FileService') private fileService: FileService,
   ) {}
   async handleRequest(
     req: Request,
