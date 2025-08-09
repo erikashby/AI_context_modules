@@ -5,6 +5,7 @@ import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { McpModule } from './mcp/mcp.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -19,6 +20,7 @@ import configuration from './config/configuration';
     AuthModule,
     // UsersModule commented out for now since it depends on database
     // UsersModule,
+    McpModule, // Add MCP module for Work Item 2 testing
   ],
   controllers: [AppController],
   providers: [AppService],
