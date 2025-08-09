@@ -14,8 +14,8 @@ import configuration from './config/configuration';
       load: [configuration],
       envFilePath: ['.env', '.env.local'],
     }),
-    // Database module will handle connection gracefully even with placeholder values
-    DatabaseModule,
+    // Database module commented out for deployment testing without PostgreSQL
+    // DatabaseModule,
     AuthModule,
     // UsersModule commented out for now since it depends on database
     // UsersModule,
