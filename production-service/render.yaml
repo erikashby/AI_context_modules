@@ -1,0 +1,51 @@
+services:
+  - type: web
+    name: ai-context-production-service
+    env: node
+    region: oregon
+    buildCommand: |
+      cd production-service
+      npm install
+      npm run build
+    startCommand: |
+      cd production-service
+      npm run start:prod
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: API_PREFIX
+        value: api/v1
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET  
+        generateValue: true
+      - key: JWT_EXPIRATION
+        value: 24h
+      - key: JWT_REFRESH_EXPIRATION
+        value: 7d
+      - key: BCRYPT_ROUNDS
+        value: 12
+      - key: MCP_PROTOCOL_VERSION
+        value: "1.0"
+      - key: MCP_CONNECTION_TIMEOUT
+        value: 30000
+      - key: CORS_ORIGINS
+        value: https://ai-context-production-service.onrender.com
+      # Database will be added in Work Item 2
+      - key: DATABASE_HOST
+        value: localhost
+      - key: DATABASE_PORT
+        value: 5432
+      - key: DATABASE_USERNAME
+        value: placeholder
+      - key: DATABASE_PASSWORD
+        value: placeholder  
+      - key: DATABASE_NAME
+        value: placeholder
+    healthCheckPath: /api/v1
+    disk:
+      name: production-service-disk
+      mountPath: /opt/render/project/production-service/logs
+      sizeGB: 1
