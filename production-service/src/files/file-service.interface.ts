@@ -42,22 +42,26 @@ export interface FileService {
   getUserProfile(username: string): Promise<UserProfile>;
   setUserProfile(username: string, profile: UserProfile): Promise<void>;
   userExists(username: string): Promise<boolean>;
-  
-  // Project Operations  
+
+  // Project Operations
   listUserProjects(username: string): Promise<string[]>;
-  createProject(username: string, projectName: string, moduleId: string): Promise<void>;
+  createProject(
+    username: string,
+    projectName: string,
+    moduleId: string,
+  ): Promise<void>;
   deleteProject(username: string, projectName: string): Promise<void>;
-  
+
   // File Operations (Core MCP Tools)
   readFile(username: string, path: string): Promise<string>;
   writeFile(username: string, path: string, content: string): Promise<void>;
   deleteFile(username: string, path: string): Promise<void>;
   listFiles(username: string, path: string): Promise<FileInfo[]>;
-  
+
   // Module Template Operations
   listAvailableModules(): Promise<ModuleInfo[]>;
   getModuleTemplate(moduleId: string): Promise<ModuleTemplate>;
-  
+
   // Security & Validation
   validatePath(username: string, path: string): boolean;
   sanitizePath(path: string): string;

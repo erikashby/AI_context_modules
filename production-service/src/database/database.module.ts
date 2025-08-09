@@ -22,7 +22,9 @@ import { ConfigService } from '@nestjs/config';
 
         // For deployment testing without real database
         if (configService.get('database.username') === 'placeholder') {
-          console.log('🔶 Database configured with placeholder values - connections will fail gracefully');
+          console.log(
+            '🔶 Database configured with placeholder values - connections will fail gracefully',
+          );
         }
 
         return dbConfig;

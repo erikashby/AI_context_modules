@@ -15,13 +15,16 @@ export class AuthService {
     return bcrypt.hash(password, saltRounds);
   }
 
-  async validatePassword(password: string, hashedPassword: string): Promise<boolean> {
+  async validatePassword(
+    password: string,
+    hashedPassword: string,
+  ): Promise<boolean> {
     return bcrypt.compare(password, hashedPassword);
   }
 
   async generateTokens(userId: string, email: string) {
     const payload = { sub: userId, email };
-    
+
     const accessToken = this.jwtService.sign(payload);
     const refreshToken = this.jwtService.sign(payload, {
       secret: this.configService.get('jwt.refreshSecret'),

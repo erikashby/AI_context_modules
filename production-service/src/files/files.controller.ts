@@ -14,14 +14,14 @@ export class FilesController {
         success: true,
         message: 'R2 connection successful',
         fileCount: files.length,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         success: false,
         message: 'R2 connection failed',
-        error: error.message,
-        timestamp: new Date().toISOString()
+        error: error instanceof Error ? error.message : String(error),
+        timestamp: new Date().toISOString(),
       };
     }
   }
@@ -30,31 +30,31 @@ export class FilesController {
   async testWrite(@Body() body: { username: string; content: string }) {
     const { username, content } = body;
     const testPath = `test-${Date.now()}.txt`;
-    
+
     try {
       // Write test file
       await this.fileService.writeFile(username, testPath, content);
-      
+
       // Read it back
       const readContent = await this.fileService.readFile(username, testPath);
-      
+
       // Clean up
       await this.fileService.deleteFile(username, testPath);
-      
+
       return {
         success: true,
         message: 'Write/Read/Delete test successful',
         written: content,
         read: readContent,
         match: content === readContent,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         success: false,
         message: 'Write/Read/Delete test failed',
-        error: error.message,
-        timestamp: new Date().toISOString()
+        error: error instanceof Error ? error.message : String(error),
+        timestamp: new Date().toISOString(),
       };
     }
   }
@@ -68,14 +68,14 @@ export class FilesController {
         username,
         files,
         count: files.length,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         success: false,
         message: 'Failed to list user files',
-        error: error.message,
-        timestamp: new Date().toISOString()
+        error: error instanceof Error ? error.message : String(error),
+        timestamp: new Date().toISOString(),
       };
     }
   }

@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param /* UseGuards */ } from '@nestjs/common';
 import { UsersService } from './users.service';
 // TODO: Import JWT guard when implemented
 // import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';

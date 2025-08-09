@@ -12,14 +12,30 @@ export class UsersService {
 
   async findAll(): Promise<User[]> {
     return this.usersRepository.find({
-      select: ['id', 'email', 'username', 'firstName', 'lastName', 'isActive', 'createdAt'],
+      select: [
+        'id',
+        'email',
+        'username',
+        'firstName',
+        'lastName',
+        'isActive',
+        'createdAt',
+      ],
     });
   }
 
   async findOne(id: string): Promise<User | null> {
     return this.usersRepository.findOne({
       where: { id },
-      select: ['id', 'email', 'username', 'firstName', 'lastName', 'isActive', 'createdAt'],
+      select: [
+        'id',
+        'email',
+        'username',
+        'firstName',
+        'lastName',
+        'isActive',
+        'createdAt',
+      ],
     });
   }
 
