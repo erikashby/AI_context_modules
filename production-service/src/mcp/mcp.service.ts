@@ -223,6 +223,14 @@ export class McpService {
                 properties: {},
               },
             },
+            {
+              name: 'list_projects',
+              description: 'List user projects with guidance for new users',
+              inputSchema: {
+                type: 'object',
+                properties: {},
+              },
+            },
           ],
         };
       });
@@ -284,6 +292,10 @@ export class McpService {
 
         if (name === 'get_user_profile') {
           return await this.handleGetUserProfile(args, username);
+        }
+
+        if (name === 'list_projects') {
+          return await this.handleListProjects(args, username);
         }
 
         throw new Error(`Unknown tool: ${name}`);
@@ -653,6 +665,56 @@ export class McpService {
             {
               type: 'text',
               text: 'User profile not found. Profile may need to be created.',
+            },
+          ],
+        };
+      }
+      throw error;
+    }
+  }
+
+  private async handleListProjects(args: any, username: string) {
+    try {
+      const projects = await this.fileService.listFiles(username, 'projects');
+
+      if (projects.length === 0) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: 'No projects found. To get started:\n\n' +
+                    '1. Create a new project: create_project("my-first-project")\n' +
+                    '2. Add files: write_file("my-first-project", "context/goals.md", "# My Goals")\n' +
+                    '3. Explore structure: explore_project("my-first-project")',
+            },
+          ],
+        };
+      }
+
+      const projectList = projects
+        .filter((p) => p.isDirectory)
+        .map((p) => `• ${p.name} (modified: ${p.lastModified.toISOString().split('T')[0]})`)
+        .join('\n');
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Your Projects (${projects.length}):\n\n${projectList}\n\nUse explore_project("project-name") to see project contents.`,
+          },
+        ],
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        // Projects directory doesn't exist - brand new user
+        return {
+          content: [
+            {
+              type: 'text',
+              text: 'Welcome! You don\'t have any projects yet.\n\n' +
+                    'To create your first project:\n' +
+                    'create_project("my-first-project")\n' +
+                    'write_file("my-first-project", "README.md", "# My First Project")',
             },
           ],
         };
