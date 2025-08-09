@@ -79,4 +79,30 @@ export class FilesController {
       };
     }
   }
+
+  @Post('create-test-file')
+  async createTestFile(@Body() body: { username: string; filename?: string; content?: string }) {
+    const { username, filename = 'test-file.txt', content = 'Hello from R2! Created at ' + new Date().toISOString() } = body;
+    
+    try {
+      await this.fileService.writeFile(username, filename, content);
+      
+      return {
+        success: true,
+        message: 'Test file created successfully',
+        username,
+        filename,
+        content,
+        path: `users/${username}/${filename}`,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error: unknown) {
+      return {
+        success: false,
+        message: 'Failed to create test file',
+        error: error instanceof Error ? error.message : String(error),
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
 }
