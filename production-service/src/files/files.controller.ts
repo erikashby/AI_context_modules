@@ -5,26 +5,6 @@ import type { FileService } from './file-service.interface';
 export class FilesController {
   constructor(@Inject('FileService') private fileService: FileService) {}
 
-  @Get('test')
-  async testConnection() {
-    try {
-      // Test basic R2 connectivity by listing files for a test user
-      const files = await this.fileService.listFiles('test-user', '');
-      return {
-        success: true,
-        message: 'R2 connection successful',
-        fileCount: files.length,
-        timestamp: new Date().toISOString(),
-      };
-    } catch (error: unknown) {
-      return {
-        success: false,
-        message: 'R2 connection failed',
-        error: error instanceof Error ? error.message : String(error),
-        timestamp: new Date().toISOString(),
-      };
-    }
-  }
 
   // NOTE: All file operations are now internal service methods only.
   // File access should go through:
