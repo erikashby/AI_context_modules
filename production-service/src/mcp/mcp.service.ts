@@ -29,6 +29,10 @@ export class McpService {
       const server = new Server({
         name: 'AI Context Service - NestJS Test',
         version: '1.0.0',
+      }, {
+        capabilities: {
+          tools: {}
+        }
       });
 
       // 3. Register tools
