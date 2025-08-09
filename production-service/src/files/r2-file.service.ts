@@ -414,6 +414,7 @@ export class R2FileService implements FileService {
 
     // Sanitize path
     const sanitized = this.sanitizePath(path);
+    console.log(`[DEBUG] validatePath - original: "${path}", sanitized: "${sanitized}"`);
     if (sanitized !== path) {
       throw new BadRequestException(`Invalid path: contains unsafe characters`);
     }
