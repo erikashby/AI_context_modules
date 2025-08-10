@@ -45,12 +45,13 @@ Each module follows the three-tier architecture:
 module-name/
 ├── configuration/          # System configuration (hidden from users)
 │   └── module.json         # Module metadata and settings
-├── fixed-content/          # Read-only reference materials (backup/restore)
-│   └── guides/            # Reference documentation and resources
-└── content/               # User's editable workspace
+├── fixed-content/          # Backup storage (invisible to users and AI)
+│   └── README.md          # Explains backup purpose for administrators
+└── content/               # User's complete editable workspace
     ├── README.md          # User workspace documentation
     ├── ai-instructions/   # AI context and guidance files (user editable)
     ├── templates/         # Reusable templates and patterns (user editable)
+    ├── guides/           # Reference documentation (user accessible)
     └── domain-folders/    # Domain-specific user content
 ```
 
@@ -90,13 +91,13 @@ These modules are automatically deployed to the AI Context Service and can be us
 
 2. **Project Creation Process:**
    - **Configuration tier** → Project system files (hidden from user)
-   - **Fixed-content tier** → Read-only reference materials (guides, documentation)
-   - **Content tier** → User's complete editable workspace (AI instructions, templates, content)
+   - **Fixed-content tier** → Backup storage for critical files (invisible to users/AI)
+   - **Content tier** → User's complete workspace (AI instructions, templates, guides, content)
 
 3. **User Experience:**
    - Users work entirely in the `content/` workspace
-   - AI instructions and templates are user-editable for customization
-   - Reference guides available in fixed-content for consultation
+   - Everything is user-editable: AI instructions, templates, guides, and content
+   - Fixed-content is invisible - used only for system backup/restoration
 
 ## Contributing New Modules
 

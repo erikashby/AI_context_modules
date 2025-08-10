@@ -12,7 +12,7 @@ Welcome to your D&D character development workspace! This is where you'll create
 2. **Explore Resources**
    - Check `ai-instructions/` for AI guidance and character creation help
    - Use `templates/` for character sheet templates and examples
-   - Reference `../fixed-content/guides/` for D&D 5E rules and references
+   - Reference `guides/` for D&D 5E rules, spells, classes, and equipment
 
 3. **Manage Campaigns**
    - Use `campaigns/` folder to track your adventures
@@ -23,6 +23,7 @@ Welcome to your D&D character development workspace! This is where you'll create
 
 - **`ai-instructions/`** - AI guidance and context files (editable)
 - **`templates/`** - Character templates and reusable content (editable)
+- **`guides/`** - D&D 5E rules, spells, classes, and equipment reference (editable)
 - **`characters/`** - Your character sheets and development notes
 - **`campaigns/`** - Campaign information and adventure logs  
 - **`resources/`** - Personal notes, house rules, and custom content
@@ -39,7 +40,7 @@ Your AI assistant has been configured with D&D 5E expertise and can help with:
 
 - Check and customize AI instructions in `ai-instructions/`
 - Use and modify templates in `templates/`
-- Reference the comprehensive D&D guides in `../fixed-content/guides/`
+- Reference and customize the comprehensive D&D guides in `guides/`
 - Ask your AI assistant for character development guidance
 
 Happy adventuring! 🎲
