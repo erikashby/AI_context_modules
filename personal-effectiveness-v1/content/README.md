@@ -19,6 +19,8 @@ Welcome to your personal effectiveness workspace! This is where you'll optimize 
 
 ## Workspace Structure
 
+- **`ai-instructions/`** - AI guidance and context files (editable)
+- **`templates/`** - Effectiveness patterns and frameworks (editable)
 - **`current-status/`** - Your immediate priorities and focus areas
 - **`goals/`** - Long-term objectives and vision setting
 - **`planning/`** - Structured time planning and scheduling
@@ -33,13 +35,14 @@ Your AI assistant has been configured for effectiveness optimization and can hel
 - Context-aware weekly and daily planning
 - Decision-making frameworks and optimization
 
-## Reference Materials
+## Customization
 
-Check `../fixed-content/templates/effectiveness-patterns/` for:
+You can customize your workspace:
+- Edit `ai-instructions/` to modify how your AI assistant behaves
+- Update `templates/effectiveness-patterns/` with your personal productivity patterns
 - Decision-making patterns and frameworks
 - Deep work optimization strategies
 - Meeting preferences and productivity insights
-- Personal productivity time analysis
 
 ## Success Patterns
 
