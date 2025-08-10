@@ -1,0 +1,1 @@
+Spell lists are often very flexible-- certain subclasses may add spells to the pool to choose from. Those spells are not directly listed in the spell list files, but can be found in the subclass links in the classes file.

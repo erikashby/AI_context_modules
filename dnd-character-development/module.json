@@ -1,0 +1,25 @@
+{
+  "module": {
+    "id": "dnd-character-development",
+    "name": "D&D Character Development Assistant",
+    "version": "1.0.0",
+    "description": "Complete D&D 5E character creation and management system with AI-guided workflows",
+    "created": "2025-07-31",
+    "updated": "2025-07-31"
+  },
+  "structure": {
+    "AI_instructions": "D&D-specific AI guidance for character creation and rule assistance",
+    "characters": "Active and completed character storage with templates",
+    "campaigns": "Campaign-specific information and character relationships",
+    "Building a character": "Comprehensive D&D 5E reference materials and rules"
+  },
+  "features": [
+    "Step-by-step character creation with AI guidance",
+    "Complete D&D 5E rules reference database",
+    "Character sheet templates and management",
+    "Spell database with class-specific lists",
+    "Race and class optimization guidance",
+    "Campaign and character progression tracking",
+    "Minecraft D&D race integration"
+  ]
+}
