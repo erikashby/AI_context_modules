@@ -13,12 +13,14 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { McpAuthService } from './mcp-auth.service';
 import type { FileService } from '../files/file-service.interface';
+import { ModuleService } from '../modules/module.service';
 
 @Injectable()
 export class McpService {
   constructor(
     private mcpAuthService: McpAuthService,
     @Inject('FileService') private fileService: FileService,
+    private moduleService: ModuleService,
   ) {}
   async handleRequest(
     req: Request,
@@ -231,6 +233,32 @@ export class McpService {
                 properties: {},
               },
             },
+            {
+              name: 'list_modules',
+              description: 'List available project templates (modules) from R2 storage',
+              inputSchema: {
+                type: 'object',
+                properties: {},
+              },
+            },
+            {
+              name: 'create_project',
+              description: 'Create a new project from a module template or GitHub URL',
+              inputSchema: {
+                type: 'object',
+                properties: {
+                  project_name: {
+                    type: 'string',
+                    description: 'Name for the new project',
+                  },
+                  template: {
+                    type: 'string',
+                    description: 'Module ID (e.g., "dnd-character-development") or GitHub URL (e.g., "https://github.com/user/repo")',
+                  },
+                },
+                required: ['project_name', 'template'],
+              },
+            },
           ],
         };
       });
@@ -296,6 +324,14 @@ export class McpService {
 
         if (name === 'list_projects') {
           return await this.handleListProjects(args, username);
+        }
+
+        if (name === 'list_modules') {
+          return await this.handleListModules(args, username);
+        }
+
+        if (name === 'create_project') {
+          return await this.handleCreateProject(args, username);
         }
 
         throw new Error(`Unknown tool: ${name}`);
@@ -720,6 +756,111 @@ export class McpService {
         };
       }
       throw error;
+    }
+  }
+
+  // Wave 2 MCP Tool Implementations - Module Management
+
+  private async handleListModules(args: any, username: string) {
+    try {
+      const modules = await this.moduleService.listModules();
+      
+      if (modules.length === 0) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: 'No modules available. Please check module deployment.',
+            },
+          ],
+        };
+      }
+
+      const moduleList = modules
+        .map((m) => {
+          const features = m.features?.length ? `\n  Features: ${m.features.join(', ')}` : '';
+          return `• ${m.name} (${m.id}) v${m.version}\n  ${m.description}${features}`;
+        })
+        .join('\n\n');
+
+      const helpText = '\n\nTo create a project from a module:\n' +
+                      'create_project("my-project", template="module-id")\n\n' +
+                      'Example: create_project("my-dnd-campaign", template="dnd-character-development")';
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Available Project Templates (${modules.length}):\n\n${moduleList}${helpText}`,
+          },
+        ],
+      };
+    } catch (error) {
+      console.error('Failed to list modules:', error);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Failed to list modules: ${error.message}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+  }
+
+  private async handleCreateProject(args: any, username: string) {
+    const { project_name, template } = args;
+
+    if (!project_name || !template) {
+      throw new BadRequestException('project_name and template parameters are required');
+    }
+
+    try {
+      const result = await this.moduleService.createProject(username, project_name, template);
+      
+      const successMessage = result.message + '\n\n' +
+                           'Your project structure:\n' +
+                           `• ${project_name}/\n` +
+                           '  ├── configuration/    (hidden system files)\n' +
+                           '  ├── protected-files/  (backup files, if any)\n' +
+                           '  └── content/         (your workspace)\n\n' +
+                           'To start working:\n' +
+                           `1. List files: list_folder_contents("${project_name}", "")\n` +
+                           `2. Read README: read_file("${project_name}", "README.md")\n` +
+                           `3. Edit files: write_file("${project_name}", "path/to/file", "content")`;
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: successMessage,
+          },
+        ],
+      };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: error.message,
+            },
+          ],
+          isError: true,
+        };
+      }
+      
+      console.error('Failed to create project:', error);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Failed to create project: ${error.message}`,
+          },
+        ],
+        isError: true,
+      };
     }
   }
 }
