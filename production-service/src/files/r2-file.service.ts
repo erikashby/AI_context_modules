@@ -415,7 +415,10 @@ export class R2FileService implements FileService {
     // Sanitize path
     const sanitized = this.sanitizePath(path);
     console.log(`[DEBUG] validatePath - original: "${path}", sanitized: "${sanitized}"`);
-    if (sanitized !== path) {
+    
+    // Allow paths where only trailing slashes were removed (this is safe sanitization)
+    const pathWithoutTrailingSlash = path.replace(/\/+$/, '');
+    if (sanitized !== path && sanitized !== pathWithoutTrailingSlash) {
       throw new BadRequestException(`Invalid path: contains unsafe characters`);
     }
 
