@@ -1,14 +1,14 @@
-# Fixed-Content Directory
+# Protected-Files Directory
 
 ## Purpose
 
-This directory contains **backup copies** of critical files from the `content/` folder that we want to ensure are maintained in case the user accidentally deletes important files.
+This directory contains **backup copies** of specific files from the `content/` folder that the module author wants to protect from user modification or accidental deletion.
 
 ## Important Notes
 
 - **AI clients never see this folder** - It's invisible to users and AI assistants
-- **For system maintenance only** - Used by administrators for file restoration
-- **Backup storage** - Contains essential files we don't want to lose
+- **For author-protected files only** - Used to preserve files the author wants to keep unchanged
+- **Protected backup storage** - Contains specific files the author doesn't want users to modify
 - **Not user-editable** - Users work entirely in the `content/` workspace
 
 ## Contents
@@ -31,4 +31,4 @@ If a user accidentally deletes important files from their `content/` workspace, 
 
 ---
 
-**Note**: Users work exclusively in the `content/` directory. This `fixed-content/` directory is for system backup purposes only.
+**Note**: Users work exclusively in the `content/` directory. This `protected-files/` directory contains author-protected file backups only.

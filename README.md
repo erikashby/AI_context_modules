@@ -45,8 +45,8 @@ Each module follows the three-tier architecture:
 module-name/
 ├── configuration/          # System configuration (hidden from users)
 │   └── module.json         # Module metadata and settings
-├── fixed-content/          # Backup storage (invisible to users and AI)
-│   └── README.md          # Explains backup purpose for administrators
+├── protected-files/        # Author-protected file backups (invisible to users and AI)
+│   └── README.md          # Explains author protection purpose for administrators
 └── content/               # User's complete editable workspace
     ├── README.md          # User workspace documentation
     ├── ai-instructions/   # AI context and guidance files (user editable)
@@ -91,13 +91,13 @@ These modules are automatically deployed to the AI Context Service and can be us
 
 2. **Project Creation Process:**
    - **Configuration tier** → Project system files (hidden from user)
-   - **Fixed-content tier** → Backup storage for critical files (invisible to users/AI)
+   - **Protected-files tier** → Author-protected file backups (invisible to users/AI)
    - **Content tier** → User's complete workspace (AI instructions, templates, guides, content)
 
 3. **User Experience:**
    - Users work entirely in the `content/` workspace
    - Everything is user-editable: AI instructions, templates, guides, and content
-   - Fixed-content is invisible - used only for system backup/restoration
+   - Protected-files is invisible - used only for author-protected file restoration
 
 ## Contributing New Modules
 
