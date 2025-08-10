@@ -39,19 +39,19 @@ Personal productivity optimization and intelligence system.
 
 ## Module Structure
 
-Each module follows this standard structure:
+Each module follows the three-tier architecture:
 
 ```
 module-name/
-├── module.json              # Module metadata and configuration
-├── README.md                # Module documentation
-├── AI_instructions/         # AI context and guidance files
-│   ├── README.md
-│   └── project-context.md
-├── content-folders/         # Domain-specific content organization
-│   ├── folder1/
-│   └── folder2/
-└── templates/              # Reusable template files (optional)
+├── configuration/          # System configuration (hidden from users)
+│   └── module.json         # Module metadata and settings
+├── fixed-content/          # Read-only reference materials
+│   ├── ai-instructions/    # AI context and guidance files
+│   ├── templates/          # Reusable templates and patterns
+│   └── guides/            # Reference documentation and resources
+└── content/               # User's editable workspace
+    ├── README.md          # User workspace documentation
+    └── domain-folders/    # Domain-specific user content
 ```
 
 ## Module Configuration (`module.json`)
@@ -88,10 +88,15 @@ These modules are automatically deployed to the AI Context Service and can be us
    - `list_modules()` - Show available project templates
    - `create_project("my-project", template="module-id")` - Create project from template
 
-2. **Project Creation:**
-   - Templates are copied to user's workspace
-   - AI instructions are set up for context-aware assistance
-   - Content structure is ready for immediate use
+2. **Project Creation Process:**
+   - **Configuration tier** → Project system files (hidden from user)
+   - **Fixed-content tier** → Reference materials and AI instructions (read-only)
+   - **Content tier** → User's editable workspace (primary working area)
+
+3. **User Experience:**
+   - Users work primarily in the `content/` workspace
+   - AI instructions provide context-aware assistance
+   - Reference materials available but don't clutter workspace
 
 ## Contributing New Modules
 
