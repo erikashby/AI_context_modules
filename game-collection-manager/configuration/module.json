@@ -1,0 +1,30 @@
+{
+  "module": {
+    "id": "game-collection-manager",
+    "name": "Game Collection Manager",
+    "version": "1.0.0",
+    "description": "Video game and hardware collection tracking with AI-powered management, wishlist planning, and sell list workflows",
+    "created": "2025-08-25",
+    "updated": "2025-08-25"
+  },
+  "structure": {
+    "ai-instructions": "AI behavior rules and gaming domain expertise for collection management",
+    "collection": "Video game and hardware inventory organized by platform and category",
+    "planning": "Wishlist tracking and sell list workflow management",
+    "activity": "Optional play logging and gaming session tracking",
+    "templates": "Structured templates for consistent data entry across all items", 
+    "reference": "Condition standards, platform guides, and pricing resources"
+  },
+  "features": [
+    "Individual game files per platform for efficient AI access",
+    "Comprehensive hardware tracking (consoles, controllers, VR, handhelds)",
+    "Single-file wishlist with priority organization",
+    "Sell list workflow (considering → ready → sold)",
+    "Optional play logging and session tracking",
+    "Market value and price target monitoring",
+    "AI-powered collection browsing and recommendations",
+    "Platform-specific organization with cross-platform search",
+    "Condition assessment and collection management",
+    "User-customizable AI instructions and reference materials"
+  ]
+}
