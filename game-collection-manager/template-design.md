@@ -26,15 +26,29 @@ game-collection-manager/
     │   ├── games/
     │   │   ├── README.md
     │   │   ├── nintendo-switch/
-    │   │   │   └── games-list.md
+    │   │   │   ├── README.md
+    │   │   │   ├── zelda-breath-of-wild.md
+    │   │   │   ├── mario-kart-8-deluxe.md
+    │   │   │   └── [individual-game-files.md]
     │   │   ├── playstation/
-    │   │   │   └── games-list.md
+    │   │   │   ├── README.md
+    │   │   │   ├── god-of-war.md
+    │   │   │   ├── spider-man.md
+    │   │   │   └── [individual-game-files.md]
     │   │   ├── xbox/
-    │   │   │   └── games-list.md
+    │   │   │   ├── README.md
+    │   │   │   ├── halo-infinite.md
+    │   │   │   ├── forza-horizon-5.md
+    │   │   │   └── [individual-game-files.md]
     │   │   ├── pc/
-    │   │   │   └── games-list.md
+    │   │   │   ├── README.md
+    │   │   │   ├── cyberpunk-2077.md
+    │   │   │   ├── steam-games/
+    │   │   │   ├── epic-games/
+    │   │   │   └── [individual-game-files.md]
     │   │   └── other-platforms/
-    │   │       └── games-list.md
+    │   │       ├── README.md
+    │   │       └── [individual-game-files.md]
     │   └── hardware/
     │       ├── README.md
     │       ├── consoles.md
@@ -43,15 +57,11 @@ game-collection-manager/
     │       └── handhelds.md
     ├── planning/
     │   ├── README.md
-    │   ├── wishlist/
-    │   │   ├── README.md
-    │   │   ├── high-priority.md
-    │   │   ├── medium-priority.md
-    │   │   └── low-priority.md
+    │   ├── wishlist.md
     │   ├── sell-list/
     │   │   ├── README.md
-    │   │   ├── ready-to-sell.md
     │   │   ├── considering.md
+    │   │   ├── ready-to-sell.md
     │   │   └── sold-items.md
     │   └── budget-tracking.md
     ├── activity/
@@ -84,6 +94,13 @@ game-collection-manager/
 ## Design Rationale
 
 ### 1. Collection Organization
+**Individual game files** within platform folders enables:
+- AI can read specific games without loading entire collection
+- Easy to add rich content per game (detailed notes, screenshots, guides)
+- Natural file-per-item organization that scales with any collection size
+- Efficient lookups: "What's the condition of Zelda?" reads one file
+- Cross-game queries use folder listings: "Show me Nintendo Switch games"
+
 **Platform-based structure** for games enables:
 - Easy AI navigation ("Show me Nintendo Switch games")
 - Logical user mental model
@@ -96,15 +113,17 @@ game-collection-manager/
 - Natural grouping for recommendations
 
 ### 2. Planning Section
-**Wishlist with priority levels**:
-- High/Medium/Low priority files
-- Easier for AI to suggest based on urgency
-- User can focus on most wanted items
+**Single wishlist file**:
+- All wishlist items in one easy-to-edit file
+- Prevents duplicate entries
+- Simple list format with priority indicators
+- Quick to browse and update
 
-**Sell list workflow**:
-- Considering → Ready-to-sell → Sold
-- Tracks the decision-making process
-- Historical record of sales
+**Sell list workflow with dedicated folder**:
+- Separate files for each stage: considering.md → ready-to-sell.md → sold-items.md
+- README.md contains specific selling instructions and tips
+- Tracks the decision-making process and historical sales records
+- Single file per stage prevents duplicates within each category
 
 ### 3. Activity Tracking
 **Optional play logging**:
@@ -175,26 +194,26 @@ game-collection-manager/
 [Condition details, issues, accessories, etc.]
 ```
 
-### Wishlist Item Template
+### Wishlist Template (Single File)
 ```markdown
-# [Item Name]
+# Game Collection Wishlist
 
-## Target Information
-- **Platform**: [Console/PC]
-- **Target Price**: $[Maximum willing to pay]
-- **Priority**: High/Medium/Low
-- **Current Market Price**: $[Research price]
+## High Priority
+- **The Legend of Zelda: Tears of the Kingdom** (Nintendo Switch) - Target: $45 | Market: $55 | Why: Sequel to BOTW
+- **God of War Ragnarök** (PlayStation 5) - Target: $35 | Market: $40 | Why: Complete the series
 
-## Why I Want It
-[Reason for wanting this game/hardware]
+## Medium Priority  
+- **Elden Ring** (PC/Steam) - Target: $30 | Market: $40 | Why: From Software RPG
+- **Halo Infinite** (Xbox Series X) - Target: $25 | Market: $30 | Why: Classic Halo experience
 
-## Price Monitoring
-- **Lowest Seen**: $[Amount] on [Date] at [Store]
-- **Price Alerts Set**: Yes/No
-- **Target Stores**: [Where to watch for deals]
+## Low Priority
+- **Cyberpunk 2077** (PC) - Target: $20 | Market: $25 | Why: After patches, worth trying
+- **Gran Turismo 7** (PlayStation 5) - Target: $35 | Market: $45 | Why: Racing sim
 
 ## Notes
-[Additional thoughts, sale notifications, etc.]
+- Check Steam sales quarterly for PC games
+- Monitor PlayStation Direct for exclusives
+- Set price alerts on Deku Deals for Nintendo games
 ```
 
 ## AI Instructions Strategy
@@ -205,18 +224,26 @@ game-collection-manager/
 - **Practical**: Focus on actionable advice and clear information
 - **Non-judgmental**: Respect all gaming preferences and budgets
 
+### User Customization
+- **AI instructions are user-editable**: Users can modify AI behavior and communication style
+- **Reference materials are user-editable**: Users can customize standards, add local resources
+- **Templates are user-editable**: Users can modify data entry formats to their preferences
+- **Full user control**: Both AI behavior and reference data can be personalized
+
 ### Context Navigation Priority
-1. **Planning files** (wishlist, sell-list) - for immediate decisions
-2. **Collection games** - for recommendations and comparisons  
+1. **Planning files** (wishlist.md, sell-list/) - for immediate buying/selling decisions
+2. **Collection games** (platform folders with individual files) - for recommendations and comparisons  
 3. **Hardware inventory** - for compatibility and capability questions
-4. **Activity logs** - for recent gaming patterns
-5. **Templates** - for consistent data entry guidance
+4. **Activity logs** - for recent gaming patterns and play history
+5. **Reference materials** - for condition standards, platform info, pricing resources
+6. **Templates** - for consistent data entry guidance
 
 ### Key Behaviors
-- **Collection browsing**: Efficiently search platform-organized files
-- **Recommendation engine**: Suggest based on owned games and preferences
+- **Collection browsing**: Use folder listings to browse platforms, read individual game files
+- **Individual game lookups**: Directly access specific game files for detailed information
+- **Recommendation engine**: Suggest based on owned games and preferences by reading relevant files
 - **Price awareness**: Help with value assessment and deal recognition
-- **Organization assistance**: Guide optimal collection management
+- **Organization assistance**: Guide optimal collection management and file naming
 
 ## Implementation Benefits
 
@@ -227,9 +254,11 @@ game-collection-manager/
 - **AI-enhanced**: Get smart recommendations and collection insights
 
 ### For AI Assistant
+- **Efficient file access**: Read only the files needed for each query
 - **Predictable navigation**: Clear folder hierarchy for reliable context discovery
 - **Structured data**: Templates ensure consistent, parseable information
-- **Rich context**: Multiple information sources for comprehensive assistance
+- **Rich per-game context**: Detailed information available for each game
+- **Scalable browsing**: Folder listings provide overview, individual files provide depth
 - **Gaming expertise**: Domain-specific knowledge and terminology
 
 ### Technical Advantages
